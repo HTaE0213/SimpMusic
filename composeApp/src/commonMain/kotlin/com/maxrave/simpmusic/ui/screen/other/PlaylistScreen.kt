@@ -41,6 +41,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Done
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
@@ -59,6 +63,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -157,8 +162,11 @@ import simpmusic.composeapp.generated.resources.baseline_shuffle_24
 import simpmusic.composeapp.generated.resources.download_button
 import simpmusic.composeapp.generated.resources.downloaded
 import simpmusic.composeapp.generated.resources.downloading
+import simpmusic.composeapp.generated.resources.edit
 import simpmusic.composeapp.generated.resources.error
 import simpmusic.composeapp.generated.resources.holder
+import simpmusic.composeapp.generated.resources.move_down
+import simpmusic.composeapp.generated.resources.move_up
 import simpmusic.composeapp.generated.resources.no_description
 import simpmusic.composeapp.generated.resources.playlist
 import simpmusic.composeapp.generated.resources.radio
@@ -181,6 +189,12 @@ fun PlaylistScreen(
             Res.readBytes("files/downloading_animation.json").decodeToString(),
         )
     }
+    DisposableEffect(Unit) {
+        onDispose {
+            sharedViewModel.clearSelection()
+        }
+    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val continuation by viewModel.continuation.collectAsStateWithLifecycle()
     val listColors by viewModel.listColors.collectAsStateWithLifecycle()
@@ -188,6 +202,7 @@ fun PlaylistScreen(
     val liked by viewModel.liked.collectAsStateWithLifecycle()
     val tracks by viewModel.tracks.collectAsStateWithLifecycle()
     val tracksListState by viewModel.tracksListState.collectAsStateWithLifecycle()
+    val playlistEditing by viewModel.playlistEditing.collectAsStateWithLifecycle()
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     var searchBarHeightPx by remember { mutableStateOf(0) }
@@ -200,10 +215,11 @@ fun PlaylistScreen(
     }
     var shouldHideTopBar by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
+    var changingOrder by rememberSaveable { mutableStateOf(false) }
 
     val filteredTrack by remember {
         derivedStateOf {
-            if (query.isEmpty() || !showSearchBar) {
+            if (changingOrder || query.isEmpty() || !showSearchBar) {
                 tracks
             } else {
                 tracks.filter {
@@ -370,10 +386,12 @@ fun PlaylistScreen(
             showLoadingDialog.second,
         )
     }
-//    Box {
-    Crossfade(
-        targetState = uiState,
-    ) { state ->
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Crossfade(
+            targetState = uiState,
+        ) { state ->
         Logger.w(tag, "State hash: ${state.hashCode()}")
         when (state) {
             is PlaylistUIState.Success -> {
@@ -961,6 +979,22 @@ fun PlaylistScreen(
                                                             }
                                                         }
                                                         Spacer(Modifier.weight(1f))
+                                                        if (isYourYouTubePlaylist) {
+                                                            IconButton(
+                                                                enabled = !playlistEditing,
+                                                                onClick = {
+                                                                    changingOrder = !changingOrder
+                                                                    showSearchBar = false
+                                                                    query = ""
+                                                                },
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = if (changingOrder) Icons.Rounded.Done else Icons.Rounded.Edit,
+                                                                    contentDescription = stringResource(Res.string.edit),
+                                                                    tint = Color.White,
+                                                                )
+                                                            }
+                                                        }
                                                         if (!data.isRadio) {
                                                             RippleIconButton(
                                                                 modifier =
@@ -1054,7 +1088,9 @@ fun PlaylistScreen(
                                     SongFullWidthItems(
                                         isPlaying = true,
                                         track = item,
-                                        onMoreClickListener = { onItemMoreClick(it) },
+                                        enableMultiSelect = !changingOrder,
+                                        selectionScope = filteredTrack,
+                                        onMoreClickListener = if (changingOrder) null else ({ onItemMoreClick(it) }),
                                         onClickListener = {
                                             Logger.w("PlaylistScreen", "index: $index")
                                             onPlaylistItemClick(it)
@@ -1065,12 +1101,34 @@ fun PlaylistScreen(
                                             )
                                         },
                                         modifier = Modifier,
+                                        rightView = if (isYourYouTubePlaylist && changingOrder) {
+                                            {
+                                                Row {
+                                                    IconButton(
+                                                        enabled = !playlistEditing && index > 0,
+                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index - 1) },
+                                                    ) {
+                                                        Icon(Icons.Rounded.KeyboardArrowUp, stringResource(Res.string.move_up))
+                                                    }
+                                                    IconButton(
+                                                        enabled = !playlistEditing && index < filteredTrack.lastIndex,
+                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index + 1) },
+                                                    ) {
+                                                        Icon(Icons.Rounded.KeyboardArrowDown, stringResource(Res.string.move_down))
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            null
+                                        },
                                     )
                                 } else {
                                     SongFullWidthItems(
                                         isPlaying = false,
                                         track = item,
-                                        onMoreClickListener = { onItemMoreClick(it) },
+                                        enableMultiSelect = !changingOrder,
+                                        selectionScope = filteredTrack,
+                                        onMoreClickListener = if (changingOrder) null else ({ onItemMoreClick(it) }),
                                         onClickListener = {
                                             Logger.w("PlaylistScreen", "index: $index")
                                             onPlaylistItemClick(it)
@@ -1081,6 +1139,26 @@ fun PlaylistScreen(
                                             )
                                         },
                                         modifier = Modifier,
+                                        rightView = if (isYourYouTubePlaylist && changingOrder) {
+                                            {
+                                                Row {
+                                                    IconButton(
+                                                        enabled = !playlistEditing && index > 0,
+                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index - 1) },
+                                                    ) {
+                                                        Icon(Icons.Rounded.KeyboardArrowUp, stringResource(Res.string.move_up))
+                                                    }
+                                                    IconButton(
+                                                        enabled = !playlistEditing && index < filteredTrack.lastIndex,
+                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index + 1) },
+                                                    ) {
+                                                        Icon(Icons.Rounded.KeyboardArrowDown, stringResource(Res.string.move_down))
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            null
+                                        },
                                     )
                                 }
                                 if (isMobilePortrait && index < filteredTrack.size - 1) {
@@ -1226,7 +1304,8 @@ fun PlaylistScreen(
                 }
 
                 if (itemBottomSheetShow && currentItem != null) {
-                    val track = currentItem?.toSongEntity() ?: return@Crossfade
+                    val selectedTrack = currentItem ?: return@Crossfade
+                    val track = selectedTrack.toSongEntity()
                     NowPlayingBottomSheet(
                         onDismiss = {
                             itemBottomSheetShow = false
@@ -1234,6 +1313,13 @@ fun PlaylistScreen(
                         },
                         navController = navController,
                         song = track,
+                        onDelete = if (isYourYouTubePlaylist) {
+                            {
+                                viewModel.removeYouTubePlaylistItem(data.id, selectedTrack)
+                            }
+                        } else {
+                            null
+                        },
                     )
                 }
                 if (playlistBottomSheetShow) {
@@ -1344,4 +1430,5 @@ fun PlaylistScreen(
             }
         }
     }
+}
 }

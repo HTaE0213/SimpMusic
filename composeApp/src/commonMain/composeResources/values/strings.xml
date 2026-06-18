@@ -547,6 +547,8 @@
     <string name="quit_app">Quit app</string>
     <string name="local_tracking_title">Local tracking listening history</string>
     <string name="local_tracking_description">Log your listening history to local database</string>
+    <string name="incognito_mode_title">Incognito mode</string>
+    <string name="incognito_mode_description">Keep playback position, but do not save searches, listening history, play counts, analytics, or send playback activity to YouTube Music</string>
     <string name="simpmusic_charts">SimpMusic Charts</string>
     <string name="crossfading">Crossfading</string>
     <string name="your_320kbps_url">Your 320kbps URL</string>
@@ -559,4 +561,18 @@
     <string name="home_offline_title">Can't connect</string>
     <string name="home_offline_subtitle">Check your internet connection and try again, or listen to your downloaded music.</string>
     <string name="listen_to_downloaded">Listen to downloaded music</string>
+    <string name="no_lyrics">Lyrics not found</string>
+    <string name="multiselect_count_selected">%1$d selected</string>
+    <string name="multiselect_add_to_queue">Add to queue</string>
+    <string name="multiselect_add_to_playlist">Add to playlist</string>
+    <string name="multiselect_clear_selection">Clear selection</string>
+    <string name="multiselect_select_all">Select all</string>
+    <string name="multiselect_added_to_playlist">Added to playlist</string>
+    <string name="multiselect_yt_playlist_updated">YouTube playlist updated</string>
+    <string name="multiselect_error">An error occurred</string>
+    <string name="highlight_mode_title">Highlight medley playback</string>
+    <string name="highlight_mode_subtitle">Automatically play only the highlight of each song</string>
+    <string name="highlight_duration_title">Highlight duration</string>
+    <string name="highlight_duration_select_title">Select playback duration</string>
+    <string name="seconds_format">%1$d seconds</string>
 </resources>

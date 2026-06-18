@@ -482,6 +482,22 @@
     <string name="combine_local_and_youtube_liked_songs_description">YouTubeの高評価のみを使用する (オフライン時はサポートしていません)</string>
     <string name="local_tracking_title">再生履歴をローカルに保存</string>
     <string name="local_tracking_description">再生履歴をローカルデータベースに記録しま す</string>
+    <string name="incognito_mode_title">シークレットモード</string>
+    <string name="incognito_mode_description">再生位置は保持し、検索履歴・再生履歴・再生回数・分析の記録とYouTube Musicへの再生情報送信を停止します</string>
     <string name="simpmusic_charts">SimpMusic チャート</string>
     <string name="crossfading">クロスフェード</string>
+    <string name="no_lyrics">歌詞が見つかりません</string>
+    <string name="multiselect_count_selected">%1$d 曲選択中</string>
+    <string name="multiselect_add_to_queue">キューに追加</string>
+    <string name="multiselect_add_to_playlist">プレイリストに追加</string>
+    <string name="multiselect_clear_selection">選択解除</string>
+    <string name="multiselect_select_all">すべて選択</string>
+    <string name="multiselect_added_to_playlist">プレイリストに追加しました</string>
+    <string name="multiselect_yt_playlist_updated">YouTubeプレイリストを更新しました</string>
+    <string name="multiselect_error">エラーが発生しました</string>
+    <string name="highlight_mode_title">サビメドレー再生（ハイライト）</string>
+    <string name="highlight_mode_subtitle">曲のサビ部分のみを自動で連続再生します</string>
+    <string name="highlight_duration_title">メドレー再生時間</string>
+    <string name="highlight_duration_select_title">再生時間を選択</string>
+    <string name="seconds_format">%1$d秒</string>
 </resources>

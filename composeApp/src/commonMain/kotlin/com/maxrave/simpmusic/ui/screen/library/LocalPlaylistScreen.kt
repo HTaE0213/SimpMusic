@@ -215,6 +215,11 @@ fun LocalPlaylistScreen(
             Res.readBytes("files/downloading_animation.json").decodeToString(),
         )
     }
+    DisposableEffect(Unit) {
+        onDispose {
+            sharedViewModel.clearSelection()
+        }
+    }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -426,7 +431,9 @@ fun LocalPlaylistScreen(
             }
         }
     var overscrollJob by remember { mutableStateOf<Job?>(null) }
-//    Box {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
     LazyColumn(
         modifier =
             Modifier
@@ -1308,6 +1315,7 @@ fun LocalPlaylistScreen(
                             isPlaying = true,
                             shouldShowDragHandle = changingOrder,
                             songEntity = item,
+                            selectionScope = trackPagingItems.itemSnapshotList.items.map { it.first.toTrack() },
                             onMoreClickListener = { onItemMoreClick(it) },
                             onClickListener = {
                                 Logger.w("PlaylistScreen", "index: $index")
@@ -1325,6 +1333,7 @@ fun LocalPlaylistScreen(
                             isPlaying = false,
                             shouldShowDragHandle = changingOrder,
                             songEntity = item,
+                            selectionScope = trackPagingItems.itemSnapshotList.items.map { it.first.toTrack() },
                             onMoreClickListener = { onItemMoreClick(it) },
                             onClickListener = {
                                 Logger.w("PlaylistScreen", "index: $index")
@@ -1521,4 +1530,5 @@ fun LocalPlaylistScreen(
                 },
         )
     }
+}
 }

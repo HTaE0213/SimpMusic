@@ -52,6 +52,7 @@ import com.maxrave.domain.repository.SongRepository
 import com.maxrave.domain.repository.StreamRepository
 import com.maxrave.domain.repository.UpdateRepository
 import com.maxrave.domain.utils.Resource
+import com.maxrave.domain.utils.LocalResource
 import com.maxrave.domain.utils.toListName
 import com.maxrave.domain.utils.toLyrics
 import com.maxrave.domain.utils.toLyricsEntity
@@ -87,6 +88,7 @@ import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -156,7 +158,32 @@ class SharedViewModel(
     var isFullScreen: Boolean = false
 
     private var _nowPlayingState = MutableStateFlow<NowPlayingTrackState?>(null)
-    val nowPlayingState: StateFlow<NowPlayingTrackState?> = _nowPlayingState
+    val nowPlayingState: StateFlow<NowPlayingTrackState?> = combine(
+        _nowPlayingState,
+        com.maxrave.data.helper.MetadataLanguageHelper.resolvedSongs
+    ) { state, resolved ->
+        if (state == null) return@combine null
+        val songEntity = state.songEntity
+        if (songEntity != null) {
+            val resolvedSong = resolved[songEntity.videoId]
+            if (resolvedSong != null) {
+                state.copy(
+                    songEntity = songEntity.copy(
+                        title = resolvedSong.title,
+                        artistName = resolvedSong.artist.split(", ")
+                    )
+                )
+            } else {
+                state
+            }
+        } else {
+            state
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = null
+    )
 
     fun getQueueDataState() = mediaPlayerHandler.queueData
 
@@ -207,6 +234,10 @@ class SharedViewModel(
     val likeStatus: StateFlow<Boolean> = _likeStatus
 
     val openAppTime: StateFlow<Int> = dataStoreManager.openAppTime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), 0)
+    val highlightModeEnabled: StateFlow<Boolean> =
+        dataStoreManager.highlightModeEnabled
+            .map { it == TRUE }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), false)
     private val _shareSavedLyrics: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val shareSavedLyrics: StateFlow<Boolean> get() = _shareSavedLyrics
 
@@ -298,21 +329,55 @@ class SharedViewModel(
             }
         }
         viewModelScope.launch {
+            combine(
+                _nowPlayingState,
+                com.maxrave.data.helper.MetadataLanguageHelper.resolvedSongs
+            ) { state, resolved ->
+                Pair(state, resolved)
+            }.collectLatest { (state, resolved) ->
+                val videoId = state?.songEntity?.videoId ?: return@collectLatest
+                val resolvedSong = resolved[videoId]
+                if (resolvedSong != null) {
+                    _nowPlayingScreenData.update { current ->
+                        current.copy(
+                            nowPlayingTitle = resolvedSong.title,
+                            artistName = resolvedSong.artist
+                        )
+                    }
+                } else {
+                    val rawTitle = state.songEntity?.title ?: ""
+                    val rawArtist = state.songEntity?.artistName?.joinToString(", ") ?: ""
+                    if (rawTitle.isNotEmpty()) {
+                        com.maxrave.data.helper.MetadataLanguageHelper.resolveSongMetadata(
+                            scope = viewModelScope,
+                            videoId = videoId,
+                            currentTitle = rawTitle,
+                            currentArtist = rawArtist
+                        )
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            mediaPlayerHandler.nowPlayingState.collect { state ->
+                _nowPlayingState.value = state
+            }
+        }
+        viewModelScope.launch {
             mediaPlayerHandler.nowPlayingState
                 .distinctUntilChangedBy {
                     it.songEntity?.videoId
                 }.collectLatest { state ->
                     Logger.w(tag, "NowPlayingState is $state")
                     canvasJob?.cancel()
-                    _nowPlayingState.value = state
                     state.songEntity?.let { track ->
+                        val resolved = com.maxrave.data.helper.MetadataLanguageHelper.resolvedSongs.value[track.videoId]
+                        val displayTitle = resolved?.title ?: track.title
+                        val displayArtist = resolved?.artist ?: (track.artistName?.joinToString(", ") ?: "")
                         _nowPlayingScreenData.value =
                             NowPlayingScreenData(
-                                nowPlayingTitle = track.title,
-                                artistName =
-                                    track
-                                        .artistName
-                                        ?.joinToString(", ") ?: "",
+                                nowPlayingTitle = displayTitle,
+                                artistName = displayArtist,
                                 isVideo = false,
                                 thumbnailURL = null,
                                 canvasData = null,
@@ -1652,6 +1717,124 @@ class SharedViewModel(
         _recreateActivity.value = false
     }
 
+    private val _isSelectionMode = MutableStateFlow(false)
+    val isSelectionMode: StateFlow<Boolean> = _isSelectionMode.asStateFlow()
+
+    private val _selectedTracks = MutableStateFlow<Set<Track>>(emptySet())
+    val selectedTracks: StateFlow<Set<Track>> = _selectedTracks.asStateFlow()
+
+    private val _selectionScopeTracks = MutableStateFlow<List<Track>>(emptyList())
+    val selectionScopeTracks: StateFlow<List<Track>> = _selectionScopeTracks.asStateFlow()
+
+    fun startSelection(
+        initialTrack: Track,
+        selectionScope: List<Track> = listOf(initialTrack),
+    ) {
+        _selectionScopeTracks.value = selectionScope.distinctBy { it.videoId }
+        _selectedTracks.value = setOf(initialTrack)
+        _isSelectionMode.value = true
+    }
+
+    fun toggleTrackSelection(track: Track) {
+        val current = _selectedTracks.value.toMutableSet()
+        if (current.any { it.videoId == track.videoId }) {
+            current.removeAll { it.videoId == track.videoId }
+            if (current.isEmpty()) {
+                _isSelectionMode.value = false
+            }
+        } else {
+            current.add(track)
+            _isSelectionMode.value = true
+        }
+        _selectedTracks.value = current
+    }
+
+    fun clearSelection() {
+        _selectedTracks.value = emptySet()
+        _selectionScopeTracks.value = emptyList()
+        _isSelectionMode.value = false
+    }
+
+    fun selectAllTracks() {
+        _selectedTracks.value = _selectionScopeTracks.value.toSet()
+        _isSelectionMode.value = _selectedTracks.value.isNotEmpty()
+    }
+
+    fun addSelectedToQueue() {
+        val list = ArrayList(_selectedTracks.value.toList())
+        if (list.isNotEmpty()) {
+            addListToQueue(list)
+            clearSelection()
+        }
+    }
+
+    fun playSelectedNext() {
+        val tracks = _selectedTracks.value.toList()
+        if (tracks.isNotEmpty()) {
+            viewModelScope.launch {
+                tracks.asReversed().forEach { mediaPlayerHandler.playNext(it) }
+                makeToast(getString(Res.string.play_next))
+                clearSelection()
+            }
+        }
+    }
+
+    fun addSelectedToLocalPlaylist(
+        playlistId: Long,
+        successMessage: String,
+        updatedYtMessage: String,
+        errorMessage: String
+    ) {
+        val tracks = _selectedTracks.value.toList()
+        if (tracks.isNotEmpty()) {
+            viewModelScope.launch(Dispatchers.IO) {
+                var failureMessage: String? = null
+                tracks.forEach { track ->
+                    localPlaylistRepository.addTrackToLocalPlaylist(
+                        id = playlistId,
+                        song = track.toSongEntity(),
+                        successMessage = successMessage,
+                        updatedYtMessage = updatedYtMessage,
+                        errorMessage = errorMessage
+                    ).collect { result ->
+                        if (result is LocalResource.Error) {
+                            failureMessage = result.message ?: errorMessage
+                        }
+                    }
+                }
+                makeToast(failureMessage ?: successMessage)
+                clearSelection()
+            }
+        }
+    }
+
+    fun addSelectedToYouTubePlaylist(
+        playlistId: String,
+        errorMessage: String,
+    ) {
+        val tracks = _selectedTracks.value.toList()
+        if (tracks.isNotEmpty()) {
+            viewModelScope.launch(Dispatchers.IO) {
+                var resultMessage: String? = null
+                var failureMessage: String? = null
+                tracks.forEach { track ->
+                    localPlaylistRepository.addYouTubePlaylistItem(
+                        youtubePlaylistId = playlistId,
+                        videoId = track.videoId,
+                    ).collect { result ->
+                        when (result) {
+                            is LocalResource.Success -> resultMessage = result.data
+                            is LocalResource.Error -> failureMessage = result.message ?: errorMessage
+                            is LocalResource.Loading -> Unit
+                        }
+                    }
+                }
+                makeToast(failureMessage ?: resultMessage ?: errorMessage)
+                clearSelection()
+            }
+        }
+    }
+
     fun addListToQueue(listTrack: ArrayList<Track>) {
         viewModelScope.launch {
             if (listTrack.size == 1 && dataStoreManager.endlessQueue.first() == TRUE) {
@@ -1701,6 +1884,12 @@ class SharedViewModel(
     fun getTranslucentBottomBar() = dataStoreManager.translucentBottomBar
 
     fun getEnableLiquidGlass() = dataStoreManager.enableLiquidGlass
+
+    fun setHighlightModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStoreManager.setHighlightModeEnabled(enabled)
+        }
+    }
 
     private val _reloadDestination: MutableStateFlow<KClass<*>?> = MutableStateFlow(null)
     val reloadDestination: StateFlow<KClass<*>?> = _reloadDestination.asStateFlow()

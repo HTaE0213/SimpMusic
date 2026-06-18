@@ -6,6 +6,7 @@ import com.maxrave.domain.data.entities.SearchHistory
 import com.maxrave.domain.data.model.searchResult.albums.AlbumsResult
 import com.maxrave.domain.data.model.searchResult.artists.ArtistsResult
 import com.maxrave.domain.data.model.searchResult.playlists.PlaylistsResult
+import com.maxrave.domain.data.model.searchResult.songs.Artist
 import com.maxrave.domain.data.model.searchResult.songs.SongsResult
 import com.maxrave.domain.data.model.searchResult.videos.VideosResult
 import com.maxrave.domain.data.type.SearchResultType
@@ -16,11 +17,13 @@ import com.maxrave.domain.utils.toQueryList
 import com.maxrave.logger.LogLevel
 import com.maxrave.logger.Logger
 import com.maxrave.simpmusic.viewModel.base.BaseViewModel
+import com.maxrave.data.helper.MetadataLanguageHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -126,6 +129,9 @@ class SearchViewModel(
 
     fun insertSearchHistory(query: String) {
         viewModelScope.launch {
+            if (dataStoreManager.incognitoModeEnabled.first() == DataStoreManager.TRUE) {
+                return@launch
+            }
             searchRepository.insertSearchHistory(SearchHistory(query = query)).collectLatest {
                 Logger.d(tag, "Inserted search history: $query, $it")
                 getSearchHistory()
@@ -144,12 +150,26 @@ class SearchViewModel(
     fun searchSongs(query: String) {
         _searchScreenUIState.value = SearchScreenUIState.Loading
         viewModelScope.launch {
-            searchRepository.getSearchDataSong(query).collect { values ->
+            val flowJa = searchRepository.getSearchDataSong(query)
+            val flowEn = searchRepository.getSearchDataSong(query, hl = "en", gl = "US")
+            flowJa.combine(flowEn) { jaRes, enRes ->
+                if (jaRes is Resource.Success && enRes is Resource.Success) {
+                    val jaList = jaRes.data ?: arrayListOf()
+                    val enList = enRes.data ?: arrayListOf()
+                    Resource.Success(ArrayList(mergeSongs(jaList, enList)))
+                } else {
+                    // jaRes is Resource.Success / Error / Loading いずれもそのまま伝播
+                    jaRes
+                }
+            }.collect { values ->
                 when (values) {
                     is Resource.Success -> {
                         values.data?.let { songsList ->
                             _searchScreenState.update { state ->
-                                state.copy(searchSongsResult = songsList)
+                                state.copy(
+                                    searchType = SearchType.SONGS,
+                                    searchSongsResult = songsList
+                                )
                             }
                         }
                         _searchScreenUIState.value = SearchScreenUIState.Success
@@ -158,6 +178,7 @@ class SearchViewModel(
                     is Resource.Error -> {
                         _searchScreenUIState.value = SearchScreenUIState.Error
                     }
+                    else -> {}
                 }
             }
         }
@@ -177,32 +198,39 @@ class SearchViewModel(
 
             val job1 =
                 launch {
-                    searchRepository.getSearchDataSong(query).collect { values ->
-                        when (values) {
-                            is Resource.Success -> values.data?.let { song = it }
-                            is Resource.Error -> {}
-                        }
-                    }
+                    val flowJa = searchRepository.getSearchDataSong(query)
+                    val flowEn = searchRepository.getSearchDataSong(query, hl = "en", gl = "US")
+                    flowJa.combine(flowEn) { jaRes, enRes ->
+                        if (jaRes is Resource.Success && enRes is Resource.Success) {
+                            ArrayList(mergeSongs(jaRes.data ?: arrayListOf(), enRes.data ?: arrayListOf()))
+                        } else if (jaRes is Resource.Success) {
+                            jaRes.data ?: arrayListOf()
+                        } else arrayListOf()
+                    }.collect { song = it }
                 }
             val job2 =
                 launch {
-                    searchRepository.getSearchDataArtist(query).collect { values ->
-                        when (values) {
-                            is Resource.Success -> values.data?.let { artist = it }
-                            is Resource.Error -> {}
-                        }
-                    }
+                    val flowJa = searchRepository.getSearchDataArtist(query)
+                    val flowEn = searchRepository.getSearchDataArtist(query, hl = "en", gl = "US")
+                    flowJa.combine(flowEn) { jaRes, enRes ->
+                        if (jaRes is Resource.Success && enRes is Resource.Success) {
+                            ArrayList(mergeArtistResults(jaRes.data ?: arrayListOf(), enRes.data ?: arrayListOf()))
+                        } else if (jaRes is Resource.Success) {
+                            jaRes.data ?: arrayListOf()
+                        } else arrayListOf()
+                    }.collect { artist = it }
                 }
             val job3 =
                 launch {
-                    searchRepository
-                        .getSearchDataAlbum(query)
-                        .collect { values ->
-                            when (values) {
-                                is Resource.Success -> values.data?.let { album = it }
-                                is Resource.Error -> {}
-                            }
-                        }
+                    val flowJa = searchRepository.getSearchDataAlbum(query)
+                    val flowEn = searchRepository.getSearchDataAlbum(query, hl = "en", gl = "US")
+                    flowJa.combine(flowEn) { jaRes, enRes ->
+                        if (jaRes is Resource.Success && enRes is Resource.Success) {
+                            ArrayList(mergeAlbums(jaRes.data ?: arrayListOf(), enRes.data ?: arrayListOf()))
+                        } else if (jaRes is Resource.Success) {
+                            jaRes.data ?: arrayListOf()
+                        } else arrayListOf()
+                    }.collect { album = it }
                 }
             val job4 =
                 launch {
@@ -215,12 +243,15 @@ class SearchViewModel(
                 }
             val job5 =
                 launch {
-                    searchRepository.getSearchDataVideo(query).collect { values ->
-                        when (values) {
-                            is Resource.Success -> values.data?.let { video.addAll(it) }
-                            is Resource.Error -> {}
-                        }
-                    }
+                    val flowJa = searchRepository.getSearchDataVideo(query)
+                    val flowEn = searchRepository.getSearchDataVideo(query, hl = "en", gl = "US")
+                    flowJa.combine(flowEn) { jaRes, enRes ->
+                        if (jaRes is Resource.Success && enRes is Resource.Success) {
+                            ArrayList(mergeVideos(jaRes.data ?: arrayListOf(), enRes.data ?: arrayListOf()))
+                        } else if (jaRes is Resource.Success) {
+                            jaRes.data ?: arrayListOf()
+                        } else arrayListOf()
+                    }.collect { video.addAll(it) }
                 }
             val job6 =
                 launch {
@@ -317,7 +348,18 @@ class SearchViewModel(
     fun searchAlbums(query: String) {
         _searchScreenUIState.value = SearchScreenUIState.Loading
         viewModelScope.launch {
-            searchRepository.getSearchDataAlbum(query).collect { values ->
+            val flowJa = searchRepository.getSearchDataAlbum(query)
+            val flowEn = searchRepository.getSearchDataAlbum(query, hl = "en", gl = "US")
+            flowJa.combine(flowEn) { jaRes, enRes ->
+                if (jaRes is Resource.Success && enRes is Resource.Success) {
+                    val jaList = jaRes.data ?: arrayListOf()
+                    val enList = enRes.data ?: arrayListOf()
+                    Resource.Success(ArrayList(mergeAlbums(jaList, enList)))
+                } else {
+                    // jaRes is Resource.Success / Error / Loading いずれもそのまま伝播
+                    jaRes
+                }
+            }.collect { values ->
                 when (values) {
                     is Resource.Success -> {
                         values.data?.let { albumsList ->
@@ -334,6 +376,7 @@ class SearchViewModel(
                     is Resource.Error -> {
                         _searchScreenUIState.value = SearchScreenUIState.Error
                     }
+                    else -> {}
                 }
             }
         }
@@ -392,7 +435,18 @@ class SearchViewModel(
     fun searchArtists(query: String) {
         _searchScreenUIState.value = SearchScreenUIState.Loading
         viewModelScope.launch {
-            searchRepository.getSearchDataArtist(query).collect { values ->
+            val flowJa = searchRepository.getSearchDataArtist(query)
+            val flowEn = searchRepository.getSearchDataArtist(query, hl = "en", gl = "US")
+            flowJa.combine(flowEn) { jaRes, enRes ->
+                if (jaRes is Resource.Success && enRes is Resource.Success) {
+                    val jaList = jaRes.data ?: arrayListOf()
+                    val enList = enRes.data ?: arrayListOf()
+                    Resource.Success(ArrayList(mergeArtistResults(jaList, enList)))
+                } else {
+                    // jaRes is Resource.Success / Error / Loading いずれもそのまま伝播
+                    jaRes
+                }
+            }.collect { values ->
                 when (values) {
                     is Resource.Success -> {
                         values.data?.let { artistsList ->
@@ -409,6 +463,7 @@ class SearchViewModel(
                     is Resource.Error -> {
                         _searchScreenUIState.value = SearchScreenUIState.Error
                     }
+                    else -> {}
                 }
             }
         }
@@ -442,7 +497,18 @@ class SearchViewModel(
     fun searchVideos(query: String) {
         _searchScreenUIState.value = SearchScreenUIState.Loading
         viewModelScope.launch {
-            searchRepository.getSearchDataVideo(query).collect { values ->
+            val flowJa = searchRepository.getSearchDataVideo(query)
+            val flowEn = searchRepository.getSearchDataVideo(query, hl = "en", gl = "US")
+            flowJa.combine(flowEn) { jaRes, enRes ->
+                if (jaRes is Resource.Success && enRes is Resource.Success) {
+                    val jaList = jaRes.data ?: arrayListOf()
+                    val enList = enRes.data ?: arrayListOf()
+                    Resource.Success(ArrayList(mergeVideos(jaList, enList)))
+                } else {
+                    // jaRes is Resource.Success / Error / Loading いずれもそのまま伝播
+                    jaRes
+                }
+            }.collect { values ->
                 when (values) {
                     is Resource.Success -> {
                         values.data?.let { videosList ->
@@ -459,6 +525,7 @@ class SearchViewModel(
                     is Resource.Error -> {
                         _searchScreenUIState.value = SearchScreenUIState.Error
                     }
+                    else -> {}
                 }
             }
         }
@@ -467,6 +534,100 @@ class SearchViewModel(
     fun setSearchType(searchType: SearchType) {
         _searchScreenState.update { state ->
             state.copy(searchType = searchType)
+        }
+    }
+
+    private fun mergeSongs(jaList: List<SongsResult>, enList: List<SongsResult>): List<SongsResult> {
+        val enMap = enList.associateBy { it.videoId }
+        return jaList.map { jaSong ->
+            val isTitleKatakana = MetadataLanguageHelper.isKatakanaTranslation(jaSong.title ?: "")
+            val artistsList = jaSong.artists ?: emptyList()
+            val isArtistKatakana = artistsList.any { MetadataLanguageHelper.isKatakanaTranslation(it.name) }
+
+            if (isTitleKatakana && isArtistKatakana) {
+                val enSong = enMap[jaSong.videoId]
+                if (enSong != null) {
+                    jaSong.copy(
+                        title = if (isTitleKatakana) enSong.title else jaSong.title,
+                        artists = mergeTrackArtists(artistsList, enSong.artists),
+                    )
+                } else jaSong
+            } else jaSong
+        }
+    }
+
+    private fun mergeVideos(jaList: List<VideosResult>, enList: List<VideosResult>): List<VideosResult> {
+        val enMap = enList.associateBy { it.videoId }
+        return jaList.map { jaVideo ->
+            val isTitleKatakana = MetadataLanguageHelper.isKatakanaTranslation(jaVideo.title ?: "")
+            val artistsList = jaVideo.artists ?: emptyList()
+            val isArtistKatakana = artistsList.any { MetadataLanguageHelper.isKatakanaTranslation(it.name) }
+
+            if (isTitleKatakana && isArtistKatakana) {
+                val enVideo = enMap[jaVideo.videoId]
+                if (enVideo != null) {
+                    jaVideo.copy(
+                        title = if (isTitleKatakana) enVideo.title ?: "" else jaVideo.title,
+                        artists = mergeTrackArtists(artistsList, enVideo.artists),
+                    )
+                } else jaVideo
+            } else jaVideo
+        }
+    }
+
+    private fun mergeAlbums(jaList: List<AlbumsResult>, enList: List<AlbumsResult>): List<AlbumsResult> {
+        val enMap = enList.associateBy { it.browseId }
+        return jaList.map { jaAlbum ->
+            val isTitleKatakana = MetadataLanguageHelper.isKatakanaTranslation(jaAlbum.title ?: "")
+            val artistsList = jaAlbum.artists
+            val isArtistKatakana = artistsList.any { MetadataLanguageHelper.isKatakanaTranslation(it.name) }
+
+            if (isTitleKatakana && isArtistKatakana) {
+                val enAlbum = enMap[jaAlbum.browseId]
+                if (enAlbum != null) {
+                    jaAlbum.copy(
+                        title = if (isTitleKatakana) enAlbum.title else jaAlbum.title,
+                        artists = mergeTrackArtists(artistsList, enAlbum.artists),
+                    )
+                } else jaAlbum
+            } else jaAlbum
+        }
+    }
+
+    /**
+     * カタカナ翻訳されたアーティスト名を、英語リストの同名アーティスト（id または name で突き合わせ）で上書きする。
+     * 従来のインデックスベースは日英で件数/並び順が異なると誤対応するため、id/name ベースに変更。
+     */
+    private fun mergeTrackArtists(
+        jaArtists: List<Artist>,
+        enArtists: List<Artist>?,
+    ): List<Artist> {
+        if (enArtists.isNullOrEmpty()) return jaArtists
+        // 优先按 id 匹配，其次按日英で同名でない限り名前が一致しないことが多いため name もフォールバックに使用
+        val enById = enArtists.filter { !it.id.isNullOrEmpty() }.associateBy { it.id }
+        return jaArtists.map { jaArtist ->
+            if (!MetadataLanguageHelper.isKatakanaTranslation(jaArtist.name)) {
+                jaArtist
+            } else {
+                val resolved = jaArtist.id?.let { enById[it] }
+                resolved?.let { jaArtist.copy(name = it.name) } ?: jaArtist
+            }
+        }
+    }
+
+    private fun mergeArtistResults(jaList: List<ArtistsResult>, enList: List<ArtistsResult>): List<ArtistsResult> {
+        val enMap = enList.associateBy { it.browseId }
+        return jaList.map { jaArtist ->
+            val isArtistKatakana = MetadataLanguageHelper.isKatakanaTranslation(jaArtist.artist ?: "")
+
+            if (isArtistKatakana) {
+                val enArtist = enMap[jaArtist.browseId]
+                if (enArtist != null) {
+                    jaArtist.copy(
+                        artist = enArtist.artist
+                    )
+                } else jaArtist
+            } else jaArtist
         }
     }
 }

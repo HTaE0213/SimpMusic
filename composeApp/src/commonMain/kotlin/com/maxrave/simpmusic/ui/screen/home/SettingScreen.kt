@@ -253,6 +253,8 @@ import simpmusic.composeapp.generated.resources.last_checked_at
 import simpmusic.composeapp.generated.resources.limit_player_cache
 import simpmusic.composeapp.generated.resources.local_tracking_description
 import simpmusic.composeapp.generated.resources.local_tracking_title
+import simpmusic.composeapp.generated.resources.incognito_mode_description
+import simpmusic.composeapp.generated.resources.incognito_mode_title
 import simpmusic.composeapp.generated.resources.log_in_to_discord
 import simpmusic.composeapp.generated.resources.log_in_to_spotify
 import simpmusic.composeapp.generated.resources.log_out
@@ -267,6 +269,11 @@ import simpmusic.composeapp.generated.resources.monthly
 import simpmusic.composeapp.generated.resources.never
 import simpmusic.composeapp.generated.resources.no_account
 import simpmusic.composeapp.generated.resources.normalize_volume
+import simpmusic.composeapp.generated.resources.highlight_mode_title
+import simpmusic.composeapp.generated.resources.highlight_mode_subtitle
+import simpmusic.composeapp.generated.resources.highlight_duration_title
+import simpmusic.composeapp.generated.resources.highlight_duration_select_title
+import simpmusic.composeapp.generated.resources.seconds_format
 import simpmusic.composeapp.generated.resources.open_system_equalizer
 import simpmusic.composeapp.generated.resources.openai
 import simpmusic.composeapp.generated.resources.openai_api_compatible
@@ -406,11 +413,19 @@ fun SettingScreen(
     val videoDownloadQuality by viewModel.videoDownloadQuality.collectAsStateWithLifecycle()
     val keepYoutubePlaylistOffline by viewModel.keepYouTubePlaylistOffline.collectAsStateWithLifecycle()
     val localTrackingEnabled by viewModel.localTrackingEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val incognitoModeEnabled by viewModel.incognitoModeEnabled.collectAsStateWithLifecycle(initialValue = false)
     val combineLocalAndYouTubeLiked by viewModel.combineLocalAndYouTubeLiked.collectAsStateWithLifecycle()
     val playVideo by viewModel.playVideoInsteadOfAudio.map { it == TRUE }.collectAsStateWithLifecycle(initialValue = false)
     val videoQuality by viewModel.videoQuality.collectAsStateWithLifecycle()
     val sendData by viewModel.sendBackToGoogle.map { it == TRUE }.collectAsStateWithLifecycle(initialValue = false)
     val normalizeVolume by viewModel.normalizeVolume.map { it == TRUE }.collectAsStateWithLifecycle(initialValue = false)
+    val highlightModeEnabled by viewModel.highlightModeEnabled.map { it == TRUE }.collectAsStateWithLifecycle(initialValue = false)
+    val highlightDuration by viewModel.highlightDuration.collectAsStateWithLifecycle(initialValue = 20)
+    val selectedHighlightDuration = highlightDuration ?: 20
+    val highlightDuration15 = stringResource(Res.string.seconds_format, 15)
+    val highlightDuration20 = stringResource(Res.string.seconds_format, 20)
+    val highlightDuration30 = stringResource(Res.string.seconds_format, 30)
+    val highlightDuration45 = stringResource(Res.string.seconds_format, 45)
     val skipSilent by viewModel.skipSilent.map { it == TRUE }.collectAsStateWithLifecycle(initialValue = false)
     val savePlaybackState by viewModel.savedPlaybackState.map { it == TRUE }.collectAsStateWithLifecycle(initialValue = false)
     val saveLastPlayed by viewModel.saveRecentSongAndQueue.map { it == TRUE }.collectAsStateWithLifecycle(initialValue = false)
@@ -749,6 +764,11 @@ fun SettingScreen(
                     subtitle = stringResource(Res.string.local_tracking_description),
                     switch = (localTrackingEnabled to { viewModel.setLocalTrackingEnabled(it) }),
                 )
+                SettingItem(
+                    title = stringResource(Res.string.incognito_mode_title),
+                    subtitle = stringResource(Res.string.incognito_mode_description),
+                    switch = (incognitoModeEnabled to { viewModel.setIncognitoModeEnabled(it) }),
+                )
                 /*
                 SettingItem(
                     title = stringResource(Res.string.combine_local_and_youtube_liked_songs),
@@ -940,6 +960,41 @@ fun SettingScreen(
                         subtitle = stringResource(Res.string.balance_media_loudness),
                         switch = (normalizeVolume to { viewModel.setNormalizeVolume(it) }),
                     )
+                    SettingItem(
+                        title = stringResource(Res.string.highlight_mode_title),
+                        subtitle = stringResource(Res.string.highlight_mode_subtitle),
+                        switch = (highlightModeEnabled to { viewModel.setHighlightModeEnabled(it) }),
+                    )
+                    if (highlightModeEnabled) {
+                        SettingItem(
+                            title = stringResource(Res.string.highlight_duration_title),
+                            subtitle = stringResource(Res.string.seconds_format, selectedHighlightDuration),
+                            onClick = {
+                                viewModel.setAlertData(
+                                    SettingAlertState(
+                                        title = runBlocking { getString(Res.string.highlight_duration_select_title) },
+                                        selectOne =
+                                            SettingAlertState.SelectData(
+                                                listSelect =
+                                                    listOf(
+                                                        (selectedHighlightDuration == 15) to highlightDuration15,
+                                                        (selectedHighlightDuration == 20) to highlightDuration20,
+                                                        (selectedHighlightDuration == 30) to highlightDuration30,
+                                                        (selectedHighlightDuration == 45) to highlightDuration45,
+                                                    )
+                                            ),
+                                        confirm =
+                                            runBlocking { getString(Res.string.change) } to { state ->
+                                                val secStr = state.selectOne?.getSelected() ?: highlightDuration20
+                                                val sec = secStr.filter(Char::isDigit).toIntOrNull() ?: 20
+                                                viewModel.setHighlightDuration(sec)
+                                            },
+                                        dismiss = runBlocking { getString(Res.string.cancel) },
+                                    ),
+                                )
+                            },
+                        )
+                    }
                     SettingItem(
                         title = stringResource(Res.string.skip_silent),
                         subtitle = stringResource(Res.string.skip_no_music_part),

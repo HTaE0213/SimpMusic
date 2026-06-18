@@ -95,6 +95,13 @@ import simpmusic.composeapp.generated.resources.baseline_more_vert_24
 import simpmusic.composeapp.generated.resources.download_for_offline_white
 import simpmusic.composeapp.generated.resources.holder
 import simpmusic.composeapp.generated.resources.playlist
+import androidx.compose.runtime.LaunchedEffect
+import com.maxrave.data.helper.MetadataLanguageHelper
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.Checkbox
+import com.maxrave.domain.utils.toTrack
+import com.maxrave.simpmusic.viewModel.SharedViewModel
 import simpmusic.composeapp.generated.resources.podcasts
 import simpmusic.composeapp.generated.resources.radio
 import simpmusic.composeapp.generated.resources.you
@@ -103,6 +110,7 @@ import kotlin.math.roundToInt
 /**
  * This is the song item in the playlist or other places.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SongFullWidthItems(
     track: Track? = null,
@@ -113,6 +121,8 @@ fun SongFullWidthItems(
     onMoreClickListener: ((videoId: String) -> Unit)? = null,
     onClickListener: ((videoId: String) -> Unit)? = null,
     onAddToQueue: ((videoId: String) -> Unit)? = null,
+    enableMultiSelect: Boolean = true,
+    selectionScope: List<Track>? = null,
     modifier: Modifier,
     rightView: @Composable (() -> Unit)? = null,
 ) {
@@ -124,6 +134,36 @@ fun SongFullWidthItems(
         .getSongAsFlow(songEntity?.videoId ?: track?.videoId ?: "")
         .mapNotNull { it?.downloadState }
         .collectAsState(initial = DownloadState.STATE_NOT_DOWNLOADED)
+
+    val currentTrack = track ?: songEntity?.toTrack()
+    val sharedViewModel: SharedViewModel = koinInject()
+    val isSelectionMode by sharedViewModel.isSelectionMode.collectAsState()
+    val selectedTracks by sharedViewModel.selectedTracks.collectAsState()
+    val isSelected = currentTrack?.let { ct -> selectedTracks.any { it.videoId == ct.videoId } } ?: false
+
+    val resolvedSongs by MetadataLanguageHelper.resolvedSongs.collectAsState()
+
+    val videoId = track?.videoId ?: songEntity?.videoId ?: ""
+    val rawTitle = track?.title ?: songEntity?.title ?: ""
+    val rawArtist = track?.artists?.firstOrNull()?.name ?: songEntity?.artistName?.firstOrNull() ?: ""
+
+    val displayTitle = resolvedSongs[videoId]?.title ?: rawTitle
+    val displayArtist = resolvedSongs[videoId]?.artist ?: (
+        track?.artists?.toListName()?.connectArtists()
+            ?: songEntity?.artistName?.connectArtists()
+            ?: ""
+    )
+
+    LaunchedEffect(videoId, rawTitle, rawArtist) {
+        if (videoId.isNotEmpty()) {
+            MetadataLanguageHelper.resolveSongMetadata(
+                scope = coroutineScope,
+                videoId = videoId,
+                currentTitle = rawTitle,
+                currentArtist = rawArtist
+            )
+        }
+    }
     val composition by rememberLottieComposition {
         LottieCompositionSpec.JsonString(
             Res.readBytes("files/audio_playing_animation.json").decodeToString(),
@@ -161,9 +201,30 @@ fun SongFullWidthItems(
             modifier =
                 modifier
                     .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                    .clickable {
-                        onClickListener?.invoke(track?.videoId ?: songEntity?.videoId ?: "")
-                    }.animateContentSize()
+                    .then(
+                        if (enableMultiSelect && currentTrack != null) {
+                            Modifier.combinedClickable(
+                                onLongClick = {
+                                    sharedViewModel.startSelection(
+                                        initialTrack = currentTrack,
+                                        selectionScope = selectionScope ?: listOf(currentTrack),
+                                    )
+                                },
+                                onClick = {
+                                    if (isSelectionMode) {
+                                        sharedViewModel.toggleTrackSelection(currentTrack)
+                                    } else {
+                                        onClickListener?.invoke(currentTrack.videoId)
+                                    }
+                                }
+                            )
+                        } else {
+                            Modifier.clickable {
+                                onClickListener?.invoke(track?.videoId ?: songEntity?.videoId ?: "")
+                            }
+                        }
+                    )
+                    .animateContentSize()
                     .pointerInput(Unit) {
                         if (!isPlaying && onAddToQueue != null) {
                             detectHorizontalDragGestures(
@@ -201,6 +262,15 @@ fun SongFullWidthItems(
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (enableMultiSelect && isSelectionMode && currentTrack != null) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = {
+                            sharedViewModel.toggleTrackSelection(currentTrack)
+                        },
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier.size(48.dp),
@@ -254,7 +324,7 @@ fun SongFullWidthItems(
                     verticalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     Text(
-                        text = track?.title ?: songEntity?.title ?: "",
+                        text = displayTitle,
                         style = typo().titleSmall,
                         maxLines = 1,
                         color = Color.White,
@@ -299,11 +369,7 @@ fun SongFullWidthItems(
                             }
                         }
                         Text(
-                            text =
-                                (
-                                    track?.artists?.toListName()?.connectArtists()
-                                        ?: songEntity?.artistName?.connectArtists()
-                                ) ?: "",
+                            text = displayArtist,
                             style = typo().bodySmall,
                             maxLines = 1,
                             color = Color(0xC4FFFFFF),
@@ -317,6 +383,27 @@ fun SongFullWidthItems(
                                     ).focusable(),
                         )
                     }
+                }
+                track?.addedBy?.avatarUrl?.takeIf { it.isNotBlank() && rightView == null }?.let { avatarUrl ->
+                    AsyncImage(
+                        model =
+                            ImageRequest
+                                .Builder(LocalPlatformContext.current)
+                                .data(avatarUrl)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .diskCacheKey(avatarUrl)
+                                .crossfade(true)
+                                .build(),
+                        placeholder = painterResource(Res.drawable.holder),
+                        error = painterResource(Res.drawable.holder),
+                        contentDescription = track.addedBy?.name,
+                        contentScale = ContentScale.Crop,
+                        modifier =
+                            Modifier
+                                .padding(horizontal = 8.dp)
+                                .size(32.dp)
+                                .clip(CircleShape),
+                    )
                 }
                 if (rightView != null) {
                     rightView()

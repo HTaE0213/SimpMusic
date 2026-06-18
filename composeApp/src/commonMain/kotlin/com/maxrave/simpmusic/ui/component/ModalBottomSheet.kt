@@ -1077,6 +1077,7 @@ fun QueueBottomSheet(
                 SongFullWidthItems(
                     songEntity = songEntity,
                     isPlaying = false,
+                    enableMultiSelect = false,
                     onAddToQueue = null,
                     modifier =
                         Modifier
@@ -1170,6 +1171,7 @@ fun QueueBottomSheet(
                                 SongFullWidthItems(
                                     track = track,
                                     isPlaying = track.videoId == songEntity?.videoId,
+                                    enableMultiSelect = false,
                                     modifier =
                                         Modifier
                                             .fillMaxWidth(),
@@ -2461,6 +2463,7 @@ fun AddToPlaylistModalBottomSheet(
     isBottomSheetVisible: Boolean,
     listLocalPlaylist: List<LocalPlaylistEntity>,
     listYouTubePlaylist: List<PlaylistsResult>,
+    initiallyShowYouTubePlaylists: Boolean = false,
     videoId: String? = null,
     onClick: (LocalPlaylistEntity) -> Unit,
     onYTPlaylistClick: (PlaylistsResult) -> Unit,
@@ -2508,7 +2511,18 @@ fun AddToPlaylistModalBottomSheet(
                     Spacer(modifier = Modifier.height(5.dp))
 
                     val chipRowState = rememberScrollState()
-                    var isYouTubePlaylistClicked by remember { mutableStateOf(false) }
+                    var isYouTubePlaylistClicked by remember(isBottomSheetVisible) {
+                        mutableStateOf(initiallyShowYouTubePlaylists && listYouTubePlaylist.isNotEmpty())
+                    }
+                    var initialPlaylistTabApplied by remember(isBottomSheetVisible) {
+                        mutableStateOf(listYouTubePlaylist.isNotEmpty())
+                    }
+                    LaunchedEffect(initiallyShowYouTubePlaylists, listYouTubePlaylist) {
+                        if (!initialPlaylistTabApplied && initiallyShowYouTubePlaylists && listYouTubePlaylist.isNotEmpty()) {
+                            isYouTubePlaylistClicked = true
+                            initialPlaylistTabApplied = true
+                        }
+                    }
                     if (listYouTubePlaylist.isNotEmpty()) {
                         Row(
                             modifier =

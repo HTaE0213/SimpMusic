@@ -102,6 +102,13 @@ class SettingsViewModel(
     val canvasCacheSize: StateFlow<Long?> = _canvasCacheSize
     private var _translucentBottomBar: MutableStateFlow<String?> = MutableStateFlow(null)
     val translucentBottomBar: StateFlow<String?> = _translucentBottomBar
+
+    private var _highlightModeEnabled = MutableStateFlow<String?>(null)
+    val highlightModeEnabled: StateFlow<String?> = _highlightModeEnabled
+
+    private var _highlightDuration = MutableStateFlow<Int?>(null)
+    val highlightDuration: StateFlow<Int?> = _highlightDuration
+
     private var _usingProxy = MutableStateFlow(false)
     val usingProxy: StateFlow<Boolean> = _usingProxy
     private var _proxyType = MutableStateFlow(DataStoreManager.ProxyType.PROXY_TYPE_HTTP)
@@ -180,6 +187,8 @@ class SettingsViewModel(
 
     private val _localTrackingEnabled = MutableStateFlow<Boolean>(false)
     val localTrackingEnabled: StateFlow<Boolean> = _localTrackingEnabled
+    private val _incognitoModeEnabled = MutableStateFlow(false)
+    val incognitoModeEnabled: StateFlow<Boolean> = _incognitoModeEnabled
 
     // Auto Backup
     private val _autoBackupEnabled = MutableStateFlow<Boolean>(false)
@@ -234,6 +243,8 @@ class SettingsViewModel(
         getPlayerCacheLimit()
         getLoggedIn()
         getNormalizeVolume()
+        getHighlightModeEnabled()
+        getHighlightDuration()
         getSkipSilent()
         getSavedPlaybackState()
         getSendBackToGoogle()
@@ -279,6 +290,7 @@ class SettingsViewModel(
         getDownloadQuality()
         getVideoDownloadQuality()
         getLocalTrackingEnabled()
+        getIncognitoModeEnabled()
         getAutoBackupEnabled()
         getAutoBackupFrequency()
         getAutoBackupMaxFiles()
@@ -304,6 +316,20 @@ class SettingsViewModel(
         viewModelScope.launch {
             dataStoreManager.setLocalTrackingEnabled(enabled)
             getLocalTrackingEnabled()
+        }
+    }
+
+    private fun getIncognitoModeEnabled() {
+        viewModelScope.launch {
+            dataStoreManager.incognitoModeEnabled.collect { enabled ->
+                _incognitoModeEnabled.value = enabled == DataStoreManager.TRUE
+            }
+        }
+    }
+
+    fun setIncognitoModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStoreManager.setIncognitoModeEnabled(enabled)
         }
     }
 
@@ -1159,6 +1185,36 @@ class SettingsViewModel(
         viewModelScope.launch {
             dataStoreManager.setNormalizeVolume(normalizeVolume)
             getNormalizeVolume()
+        }
+    }
+
+    fun getHighlightModeEnabled() {
+        viewModelScope.launch {
+            dataStoreManager.highlightModeEnabled.collect { enabled ->
+                _highlightModeEnabled.emit(enabled)
+            }
+        }
+    }
+
+    fun setHighlightModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStoreManager.setHighlightModeEnabled(enabled)
+            getHighlightModeEnabled()
+        }
+    }
+
+    fun getHighlightDuration() {
+        viewModelScope.launch {
+            dataStoreManager.highlightDuration.collect { duration ->
+                _highlightDuration.emit(duration)
+            }
+        }
+    }
+
+    fun setHighlightDuration(duration: Int) {
+        viewModelScope.launch {
+            dataStoreManager.setHighlightDuration(duration)
+            getHighlightDuration()
         }
     }
 

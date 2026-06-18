@@ -67,11 +67,16 @@ abstract class BaseViewModel :
     }
 
     fun makeToast(message: String?) {
-        showToast(
-            message = message ?: "NO MESSAGE",
-            duration = ToastDuration.Short,
-            gravity = ToastGravity.Bottom,
-        )
+        val safeMessage = message?.trim()?.takeUnless {
+            it.isEmpty() || it.equals("null", ignoreCase = true)
+        } ?: return
+        viewModelScope.launch {
+            showToast(
+                message = safeMessage,
+                duration = ToastDuration.Short,
+                gravity = ToastGravity.Bottom,
+            )
+        }
     }
 
     protected fun getString(resId: StringResource): String =

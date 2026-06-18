@@ -43,6 +43,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -139,9 +140,27 @@ fun SearchScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val focusManager = LocalFocusManager.current
+    DisposableEffect(Unit) {
+        onDispose {
+            sharedViewModel.clearSelection()
+        }
+    }
+
     val searchScreenState by searchViewModel.searchScreenState.collectAsStateWithLifecycle()
     val uiState by searchViewModel.searchScreenUIState.collectAsStateWithLifecycle()
     val searchHistory by searchViewModel.searchHistory.collectAsStateWithLifecycle()
+    val selectableTracks = when (searchScreenState.searchType) {
+        SearchType.ALL -> searchScreenState.searchAllResult.mapNotNull { result ->
+            when (result) {
+                is SongsResult -> result.toTrack()
+                is VideosResult -> result.toTrack()
+                else -> null
+            }
+        }
+        SearchType.SONGS -> searchScreenState.searchSongsResult.map { it.toTrack() }
+        SearchType.VIDEOS -> searchScreenState.searchVideosResult.map { it.toTrack() }
+        else -> emptyList()
+    }
 
     var searchUIType by rememberSaveable { mutableStateOf(SearchUIType.EMPTY) }
     var searchText by rememberSaveable { mutableStateOf("") }
@@ -240,13 +259,16 @@ fun SearchScreen(
         )
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Transparent)
-                .padding(vertical = 10.dp),
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent)
+                    .padding(vertical = 10.dp),
+        ) {
         // Search Bar with Animated Placeholder
         SearchBar(
             inputField = {
@@ -667,6 +689,7 @@ fun SearchScreen(
                                                                     SongFullWidthItems(
                                                                         track = result.toTrack(),
                                                                         isPlaying = result.videoId == currentVideoId,
+                                                                        selectionScope = selectableTracks,
                                                                         modifier = Modifier,
                                                                         onMoreClickListener = {
                                                                             onMoreClick(result.toTrack().toSongEntity())
@@ -702,6 +725,7 @@ fun SearchScreen(
                                                                     SongFullWidthItems(
                                                                         track = result.toTrack(),
                                                                         isPlaying = result.videoId == currentVideoId,
+                                                                        selectionScope = selectableTracks,
                                                                         modifier = Modifier,
                                                                         onMoreClickListener = {
                                                                             onMoreClick(result.toTrack().toSongEntity())
@@ -849,6 +873,7 @@ fun SearchScreen(
             }
         }
     }
+}
 }
 
 @Composable

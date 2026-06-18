@@ -12,6 +12,7 @@ import com.maxrave.domain.data.model.browse.album.Track
 import com.maxrave.domain.data.model.browse.playlist.Author
 import com.maxrave.domain.data.model.browse.playlist.PlaylistBrowse
 import com.maxrave.domain.data.model.browse.playlist.PlaylistState
+import com.maxrave.domain.data.model.searchResult.songs.Artist
 import com.maxrave.domain.extension.now
 import com.maxrave.domain.mediaservice.handler.DownloadHandler
 import com.maxrave.domain.mediaservice.handler.PlaylistType
@@ -42,7 +43,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import com.maxrave.data.helper.MetadataLanguageHelper
 import org.koin.core.component.inject
 import simpmusic.composeapp.generated.resources.Res
 import simpmusic.composeapp.generated.resources.auto_created_by_youtube_music
@@ -52,10 +55,12 @@ import simpmusic.composeapp.generated.resources.playlist
 import simpmusic.composeapp.generated.resources.playlist_is_empty
 import simpmusic.composeapp.generated.resources.radio
 import simpmusic.composeapp.generated.resources.radio_not_available
+import simpmusic.composeapp.generated.resources.removed_from_YouTube_playlist
 import simpmusic.composeapp.generated.resources.shuffle
 import simpmusic.composeapp.generated.resources.shuffle_not_available
 import simpmusic.composeapp.generated.resources.synced
 import simpmusic.composeapp.generated.resources.syncing
+import simpmusic.composeapp.generated.resources.updated
 import simpmusic.composeapp.generated.resources.view_count
 
 class PlaylistViewModel(
@@ -81,6 +86,9 @@ class PlaylistViewModel(
 
     private var _tracks = MutableStateFlow<List<Track>>(emptyList())
     val tracks: StateFlow<List<Track>> = _tracks
+
+    private val _playlistEditing = MutableStateFlow(false)
+    val playlistEditing: StateFlow<Boolean> = _playlistEditing
 
     private var _tracksListState = MutableStateFlow<ListState>(ListState.IDLE)
     val tracksListState: StateFlow<ListState> = _tracksListState
@@ -225,44 +233,73 @@ class PlaylistViewModel(
                     }
             } else {
                 // This is an online playlist
-                playlistRepository
-                    .getPlaylistData(id, getString(Res.string.view_count))
-                    .collect { res ->
-                        val data = res.data
-                        when (res) {
-                            is Resource.Success if (data != null) -> {
-                                Logger.d(tag, "Playlist data: $data")
-                                log("Playlist endpoint: ${data.first.shuffleEndpoint}")
-                                _uiState.value =
-                                    Success(
-                                        data =
-                                            PlaylistState(
-                                                id = data.first.id,
-                                                title = data.first.title,
-                                                isRadio = false,
-                                                author = data.first.author,
-                                                thumbnail =
-                                                    data.first.thumbnails
-                                                        .lastOrNull()
-                                                        ?.url,
-                                                description = data.first.description,
-                                                trackCount = data.first.trackCount,
-                                                year = data.first.year,
-                                                shuffleEndpoint = data.first.shuffleEndpoint,
-                                                radioEndpoint = data.first.radioEndpoint,
-                                            ),
-                                    )
-                                _tracks.value = data.first.tracks
-                                _continuation.value = data.second
-                                if (data.second.isNullOrEmpty()) _tracksListState.value = ListState.PAGINATION_EXHAUST
-                                getPlaylistEntity(id = data.first.id, playlistBrowse = data.first)
-                            }
+                val flowJa = playlistRepository.getPlaylistData(id, getString(Res.string.view_count))
+                val flowEn = playlistRepository.getPlaylistData(id, getString(Res.string.view_count), hl = "en", gl = "US")
+                flowJa.combine(flowEn) { jaRes, enRes ->
+                    if (jaRes is Resource.Success && enRes is Resource.Success) {
+                        val jaData = jaRes.data
+                        val enData = enRes.data
+                        if (jaData != null && enData != null) {
+                            val mergedTracks = mergeTracks(jaData.first.tracks, enData.first.tracks)
+                            val shouldResolveHeader = MetadataLanguageHelper.shouldResolveSongMetadata(
+                                jaData.first.title,
+                                jaData.first.author.name,
+                            )
+                            val mergedPlaylistBrowse = jaData.first.copy(
+                                title = if (shouldResolveHeader) {
+                                    enData.first.title
+                                } else {
+                                    jaData.first.title
+                                },
+                                author = jaData.first.author.copy(
+                                    name = if (shouldResolveHeader) enData.first.author.name else jaData.first.author.name,
+                                ),
+                                tracks = mergedTracks
+                            )
+                            Resource.Success(Pair(mergedPlaylistBrowse, jaData.second))
+                        } else {
+                            jaRes
+                        }
+                    } else {
+                        // jaRes is Resource.Success / Error / Loading いずれもそのまま伝播
+                        jaRes
+                    }
+                }.collect { res ->
+                    val data = res.data
+                    when (res) {
+                        is Resource.Success if (data != null) -> {
+                            Logger.d(tag, "Playlist data: $data")
+                            log("Playlist endpoint: ${data.first.shuffleEndpoint}")
+                            _uiState.value =
+                                Success(
+                                    data =
+                                        PlaylistState(
+                                            id = data.first.id,
+                                            title = data.first.title,
+                                            isRadio = false,
+                                            author = data.first.author,
+                                            thumbnail =
+                                                data.first.thumbnails
+                                                    .lastOrNull()
+                                                    ?.url,
+                                            description = data.first.description,
+                                            trackCount = data.first.trackCount,
+                                            year = data.first.year,
+                                            shuffleEndpoint = data.first.shuffleEndpoint,
+                                            radioEndpoint = data.first.radioEndpoint,
+                                        ),
+                                )
+                            _tracks.value = data.first.tracks
+                            _continuation.value = data.second
+                            if (data.second.isNullOrEmpty()) _tracksListState.value = ListState.PAGINATION_EXHAUST
+                            getPlaylistEntity(id = data.first.id, playlistBrowse = data.first)
+                        }
 
-                            else -> {
-                                getPlaylistEntity(id)
-                            }
+                        else -> {
+                            getPlaylistEntity(id)
                         }
                     }
+                }
             }
         }
     }
@@ -676,10 +713,111 @@ class PlaylistViewModel(
         }
     }
 
+    fun removeYouTubePlaylistItem(
+        playlistId: String,
+        track: Track,
+    ) {
+        if (_playlistEditing.value) return
+        _playlistEditing.value = true
+        viewModelScope.launch {
+            try {
+                playlistRepository.removeYouTubePlaylistItem(playlistId, track.videoId).collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            _tracks.update { current -> current.filterNot { it.videoId == track.videoId } }
+                            _uiState.update { state ->
+                                if (state is Success) {
+                                    state.data?.let { data ->
+                                        Success(data.copy(trackCount = _tracks.value.size))
+                                    } ?: state
+                                } else {
+                                    state
+                                }
+                            }
+                            makeToast(getString(Res.string.removed_from_YouTube_playlist))
+                        }
+
+                        is Resource.Error -> makeToast(result.message ?: getString(Res.string.error))
+                    }
+                }
+            } finally {
+                _playlistEditing.value = false
+            }
+        }
+    }
+
+    fun moveYouTubePlaylistItem(
+        playlistId: String,
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        if (_playlistEditing.value || fromIndex == toIndex || fromIndex !in _tracks.value.indices || toIndex !in _tracks.value.indices) return
+        _playlistEditing.value = true
+        val previousTracks = _tracks.value
+        val reordered = previousTracks.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
+        _tracks.value = reordered
+        viewModelScope.launch {
+            try {
+                playlistRepository.moveYouTubePlaylistItem(playlistId, fromIndex, toIndex).collect { result ->
+                    when (result) {
+                        is Resource.Success -> makeToast(getString(Res.string.updated))
+                        is Resource.Error -> {
+                            _tracks.value = previousTracks
+                            makeToast(result.message ?: getString(Res.string.error))
+                        }
+                    }
+                }
+            } finally {
+                _playlistEditing.value = false
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         collectDownloadedJob?.cancel()
         playlistEntityJob?.cancel()
+    }
+
+    private fun mergeTracks(jaList: List<Track>, enList: List<Track>): List<Track> {
+        val enMap = enList.associateBy { it.videoId }
+        return jaList.map { jaTrack ->
+            val isTitleKatakana = MetadataLanguageHelper.isKatakanaTranslation(jaTrack.title)
+            val artistsList = jaTrack.artists ?: emptyList()
+            val isArtistKatakana = artistsList.any { MetadataLanguageHelper.isKatakanaTranslation(it.name) }
+
+            if (isTitleKatakana && isArtistKatakana) {
+                val enTrack = enMap[jaTrack.videoId]
+                if (enTrack != null) {
+                    jaTrack.copy(
+                        title = if (isTitleKatakana) enTrack.title else jaTrack.title,
+                        artists = mergeArtists(artistsList, enTrack.artists),
+                    )
+                } else jaTrack
+            } else jaTrack
+        }
+    }
+
+    /**
+     * カタカナ翻訳されたアーティスト名を、英語リストの同一アーティスト（id で突き合わせ）で上書きする。
+     * 日英で並び順が異なるためインデックスではなく id で対応付ける。
+     */
+    private fun mergeArtists(
+        jaArtists: List<Artist>,
+        enArtists: List<Artist>?,
+    ): List<Artist> {
+        if (enArtists.isNullOrEmpty()) return jaArtists
+        val enById = enArtists.filter { !it.id.isNullOrEmpty() }.associateBy { it.id }
+        return jaArtists.map { jaArtist ->
+            if (!MetadataLanguageHelper.isKatakanaTranslation(jaArtist.name)) {
+                jaArtist
+            } else {
+                val resolved = jaArtist.id?.let { enById[it] }
+                resolved?.let { jaArtist.copy(name = it.name) } ?: jaArtist
+            }
+        }
     }
 }
 
