@@ -1,0 +1,51 @@
+# タスク管理 (Task)
+
+- [x] SharedViewModel.kt への複数選択状態管理コードと一括アクション関数の実装 <!-- id: 10 -->
+- [x] 共通一括操作バー MultiSelectBottomBar.kt の新規作成 <!-- id: 11 -->
+- [x] FullWidthItems.kt での長押し検知と選択状態 UI の統合 <!-- id: 12 -->
+- [x] 主要画面への一括操作バー配置と遷移時クリア制御 <!-- id: 13 -->
+  - [x] PlaylistScreen.kt
+  - [x] LocalPlaylistScreen.kt
+  - [x] SearchScreen.kt
+- [x] ビルド検証および動作確認 <!-- id: 14 -->
+- [x] ボトムバー被り問題の修正（App.kt で選択モード時にボトムナビゲーションバーを非表示にする） <!-- id: 15 -->
+- [x] オプションD（日本語・英語の2系統並列リクエストマージ法）の実装 <!-- id: 16 -->
+  - [x] 検索（SearchViewModel/SearchScreen）での並列取得とマージ処理の実装
+  - [x] プレイリスト（PlaylistViewModel/PlaylistScreen）での並列取得とマージ処理の実装
+  - [x] メタデータ自動再解決ロジック（UI側のLaunchedEffect）の整理・無効化
+- [ ] 👤 waiting_human: 複数選択モードでボトムバーが被らず最下部に配置されることの確認 <!-- id: 17 -->
+- [ ] 👤 waiting_human: 検索・プレイリスト画面でロード直後からオリジナル表記となり、表示切り替えのカクつきがないことの確認 <!-- id: 18 -->
+- [ ] 👤 waiting_human: 最新APKの手動検証と最終確認 <!-- id: 19 -->
+- [x] 2026-06-18 最新デバッグAPKのビルド（`:androidApp:assembleDebug`、BUILD SUCCESSFUL） <!-- id: 20 -->
+- [x] 2026-06-18 実機検証前コードレビュー <!-- id: 21 -->
+- [x] 一括プレイリスト追加のFlow収集修正（最終ビルド成功） <!-- id: 22 -->
+- [x] 選択モード開始範囲と操作バー配置範囲の整合（最終ビルド成功） <!-- id: 23 -->
+- [x] 日英 `combine` 指摘の再調査（ResourceにLoadingがなく非該当と確認） <!-- id: 24 -->
+- [x] カタカナのみの邦楽を誤変換しにくい保守的判定へ変更（最終ビルド成功） <!-- id: 25 -->
+- [x] 独立した手動先読みを削除し既存プリキャッシュへ一本化（最終ビルド成功） <!-- id: 26 -->
+- [x] Android Autoの二重メディア設定を解消（最終ビルド成功） <!-- id: 27 -->
+- [x] 歌詞未取得・隣接ページでの歌詞切替を抑止（最終ビルド成功） <!-- id: 28 -->
+- [x] すべて選択操作と設定文言の英日リソースを追加（最終ビルド成功） <!-- id: 29 -->
+- [x] 親・core双方の `git diff --check` 成功 <!-- id: 30 -->
+- [ ] 🔧 in_progress: 曲・動画行の全画面複数選択とグローバル操作バー <!-- id: 31 -->
+  - 実装済み。コンパイル診断と実機検証待ち。
+- [ ] 🔧 in_progress: 戻る操作で画面遷移せず選択状態のみ解除 <!-- id: 32 -->
+  - 実装済み。Compose Multiplatform 1.11.1の `ui-backhandler` 依存は確認済み、コンパイル診断待ち。
+- [ ] 🔧 in_progress: 一括「次に再生」とYouTubeプレイリスト追加 <!-- id: 33 -->
+  - 実装済み。API実動作とキュー順序の実機検証待ち。
+- [ ] 🔧 in_progress: 初期表示前のオリジナル表記解決と未解決曲フォールバック <!-- id: 34 -->
+- [ ] 🔧 in_progress: 通知メタデータの更新 <!-- id: 35 -->
+- [ ] 🔧 in_progress: タップから再生開始までの遅延調査・改善 <!-- id: 36 -->
+- [ ] 🔧 in_progress: タスク終了・再起動後の再生状態復元 <!-- id: 37 -->
+- [ ] 🔧 in_progress: プレイリストの削除・並べ替え編集 <!-- id: 38 -->
+  - 所有YouTubeプレイリストの曲削除・上下移動を実装済み。コンパイルと実API検証待ち。
+- [ ] 🔧 in_progress: 共同プレイリスト追加者表示のAPI能力調査 <!-- id: 39 -->
+  - OSS `ytmusicapi` の2025-10共同プレイリスト実応答から `contributorsAvatars` 構造を特定。パーサー・ドメインモデル・曲行UIへ実装済み。コンパイルと実アカウント検証待ち。
+- [ ] 🔧 in_progress: シークレットモードの記録抑止 <!-- id: 40 -->
+  - 設定UIとDataStore、検索履歴、Android/JVM再生履歴・再生回数・分析・YouTube送信の抑止を実装済み。再生位置とキュー復元は保持。コンパイルと実機検証待ち。
+- [x] 最新デバッグAPK生成 <!-- id: 41 -->
+  - `:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` が `BUILD SUCCESSFUL`。全ABI 4 APKを2026-06-19 01:45に生成。
+- [x] 上流更新に備えたGit履歴整理 <!-- id: 42 -->
+  - `core`: `codex/simpmusic-enhancements-core` / `be35e8e`
+  - 親: `codex/simpmusic-enhancements` / `e471134`
+  - ローカル設定・ログ・画像・APKはコミット対象外。

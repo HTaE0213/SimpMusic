@@ -1,0 +1,49 @@
+# 変更履歴 (Changes)
+
+## セッション履歴
+- 新規プロジェクト初期化
+- **2026-06-14 (現在セッション)**:
+  - **再生遅延対策のビルドエラー修正**: `Media3ServiceModule.kt` において `com.maxrave.domain.extension` から `isBefore` と `plusSeconds` のインポートを追加し、`MERGING_DATA_TYPE` のインポートを復元した。これにより `:media3` のコンパイルが成功。
+  - **オリジナル言語表示のビルドエラー修正**: `composeApp` に `:kotlinYtmusicScraper` 依存を持たせずに `YouTube` クライアントを利用するため、`MetadataLanguageHelper` に `KoinComponent` を実装して `YouTube` をデリゲート注入。`FullWidthItems.kt` での `YouTube` 参照を排除し、`:androidApp:assembleDebug` の完全ビルド成功を確認。
+  - **並列マージ法（オプションD）とボトムバー被り問題の修正（セッション後半）**:
+    - `App.kt` にて、複数選択モード中はボトムバー（ナビゲーション＆ミニプレイヤー）を非表示にする条件を追加。
+    - `YouTube.kt` (`customQuery`)、`SearchRepository`、`PlaylistRepository`、および実装クラスのシグネチャを拡張し、`hl` / `gl` の String パラメータを渡せるように実装。これにより `core:domain` レイヤーから Scraper モジュールへの直接依存を排除。
+    - `SearchViewModel` と `PlaylistViewModel` にて、Coroutines の `combine` を用いて日本語・英語のAPIリクエストを並列実行し、カタカナ翻訳を英語でマージするロジックを実装。
+    - `FullWidthItems.kt` の個別非同期解決 `LaunchedEffect` を無効化し、表示後の個別解決によるカクつきと無駄なAPIリクエストを防止。
+    - `composeApp` モジュールが Scraper モジュールに依存していないことによる `YouTubeLocale` 参照コンパイルエラーを、String パラメータへの置き換えで解決。
+    - `Resource` クラスに存在しない `Resource.Loading()` を呼び出していた箇所を `jaRes` 返却に修正し、コンパイルを通した。
+- **2026-06-18 状態監査**:
+  - 現在ブランチが `feature/multiselect-langfix`、基点が `c4c4ddb` (`v1.4.0`) であることを確認。
+  - 親リポジトリに追跡済み14ファイルの差分（922行追加、332行削除）と未追跡の `MultiSelectBottomBar.kt` があることを確認。
+  - `core` サブモジュールに追跡済み18ファイルの差分（602行追加、117行削除）と未追跡ディレクトリがあることを確認。
+  - `git diff --check` で `FullWidthItems.kt` の行末空白を3件検出。未修正。
+  - 実装タスクと手動検証タスクを分離し、フェーズを「検証・確認」に同期。
+  - `SearchViewModel.kt` の型消去によるJVMシグネチャ衝突を、用途別の関数名への変更で解消。
+  - `:androidApp:assembleDebug` が成功し、全ABIのデバッグAPKを2026-06-18 19:19に生成。
+  - 実機検証前コードレビューを実施。コード変更は行わず、機能ブロッカー5件と追加のUI・品質課題を記録。
+  - 一括追加Flowを最後まで収集するよう修正し、処理結果をまとめて通知。
+  - 複数選択を対象3画面でのみ有効化し、すべて選択操作を追加。
+  - メタデータ英語解決をタイトル・アーティスト双方がカタカナ候補の場合に限定。
+  - 重複する手動CacheWriter先読みを削除し、既存ExoPlayerプリキャッシュへ一本化。
+  - Android Autoコールバックの手動ロードを削除し、返却キューとの二重設定を解消。
+  - 歌詞切替を歌詞取得済みの現在ページに限定。
+  - ハイライト設定文言を英語・日本語リソースへ移行。
+  - `:androidApp:assembleDebug` 最終成功、全ABI APKを2026-06-18 19:50に生成。
+  - 共通曲行の複数選択を既定で有効化し、選択範囲を `SharedViewModel` に保持する構成へ変更。
+  - `MultiSelectBottomBar` を `App.kt` のグローバルボトムバーへ移動し、各画面の重複配置を削除。
+  - 複数選択中の戻る解除、一括「次に再生」、YouTubeプレイリスト一括追加を実装。現時点で未検証。
+  - `BaseViewModel.makeToast` を `viewModelScope` 経由に変更し、IOスレッドクラッシュと空/null通知を抑止。
+  - `BackHandler` をNavigationより後に合成される位置へ移動。
+  - 複数選択のプレイリスト追加シートはYouTubeプレイリストを初期表示。
+  - 再生画面にメドレートグルを追加し、Androidでハイライト解決中は一時停止してシーク後に再開するよう変更。
+  - `PlaylistRepository` にYouTubeプレイリスト曲削除・移動操作を追加。`PlaylistScreen` で所有プレイリストの削除アクションと上下移動編集モードを提供。
+  - シークレットモードの要件を「再生位置のみ保持し、履歴・再生回数・ランキング・分析イベントを記録しない」と確定。
+  - 本家YT Musicの共同プレイリストで、曲行右端のアバターが追加者表示であることをユーザー提供画像で確認。
+  - `contributorsAvatars` 応答モデル、追加者ドメインモデル、初回・継続パーサー、共通曲行のアバター表示を実装。
+  - シークレット設定を追加し、検索履歴・最近再生・再生回数・ローカル分析・YouTube再生トラッキングをAndroid/JVMで抑止。キューと再生位置は保持。
+  - シークレット中の新規曲を復元用DBに保持しつつ最近項目から除外するID管理をDataStoreに追加。
+  - ユーザーの明示依頼を受け、最新変更を含むデバッグAPK生成を開始。
+  - Kotlin Daemonの増分キャッシュ競合をDaemon停止・増分無効化で回避し、全ABIデバッグAPK 4件を正常生成。SHA-256を確認。
+  - `core` のdetached HEADを `codex/simpmusic-enhancements-core` へ移し、実装一式を `be35e8e` としてコミット。
+  - 親を `codex/simpmusic-enhancements` へ移し、アプリUIと `core` ポインタを `e471134` としてコミット。
+  - `.agents`、`.codex`、`AGENTS.md`、他トピック文書、ログ、画像はコミット対象外として保持。
