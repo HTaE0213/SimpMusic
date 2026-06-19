@@ -76,4 +76,4 @@
 - **一括追加通知**: `failureMessage ?: successMessage` は失敗を優先するため、一部失敗で成功表示になる指摘は非該当。ただし成功/失敗件数が不明なため、各トラックの最終結果を集計して件数表示へ変更。
 - **全選択スコープ**: モーダル内の明示的無効化2箇所以外で、`SongFullWidthItems` の全利用画面へ表示中の曲集合を `selectionScope` として補完。
 - **シークレット除外ID**: 単純な上限削除は非公開再生曲を履歴へ再露出させるため不採用。DB列への移行または履歴削除連動の掃除が必要で、非阻断課題として維持。
-- **検証**: 英日XML構文と `git diff --check` は成功。Gradleビルドは未実施。
+- **検証**: 英日XML構文と `git diff --check` に加え、`:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` が1分20秒で成功。
