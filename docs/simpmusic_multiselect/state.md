@@ -19,12 +19,13 @@ SimpMusicをフォークし、複数選択機能の追加、再生再開遅延�
 - 2026-06-19: APK初回ビルドはKotlin増分キャッシュのDaemon競合で失敗。Daemon停止・増分無効で再試行中。
 - 2026-06-19: `:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` が1分43秒で成功。全ABI 4 APKを生成し、サイズ・SHA-256を確認。
 - 2026-06-19: 親を `codex/simpmusic-enhancements`、`core` を `codex/simpmusic-enhancements-core` へ移行。`core` を `be35e8e`、親アプリを `e471134` としてコミット。
+- 2026-06-19: GitHub CLIのアクティブアカウントを `HTaE0213` へ切り替え、`core` ブランチをForkへpush成功。
 
 ## アクティブタスク
-- 生成APKの実機検証
+- Forkリモート設定と `core` → 親の順序でのpush
 
 ## 次のアクション
-- arm64-v8aデバッグAPKを実機へインストールし、共同プレイリスト追加者表示とシークレットモードの記録抑止を確認する。
+- 同期文書をコミットし、親 `codex/simpmusic-enhancements` を `HTaE0213/SimpMusic` へpushする。
 
 ## 保留中のユーザー確認事項 (Pending Human Actions)
 - 修正版APKの実機インストールと、共同プレイリスト追加者アバター・シークレットモードの確認。
@@ -32,7 +33,6 @@ SimpMusicをフォークし、複数選択機能の追加、再生再開遅延�
 
 ## 重要な警告 (Critical Warnings)
 - 実装コードは親・`core` ともコミット済み。親にはローカル設定・ログ・画像・他トピック文書の未追跡ファイルが残る。
-- `core` の専用ブランチはローカルのみで、まだリモートへpushしていない。親だけをpushすると参照先コミットを他環境で取得できない。
 - Androidデバッグビルドは成功済み。GUI・実機・Android Autoの挙動は再検証が必要。
 - シークレットモードは認証付き検索API自体の通信を停止しない。Google側でのリクエストログ非保存は保証できない。
 - 実機報告により、前回の3画面限定方針は要件不一致と判明。

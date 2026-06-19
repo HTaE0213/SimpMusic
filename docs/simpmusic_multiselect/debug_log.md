@@ -66,3 +66,8 @@
 - **対応**: Gradle Daemonを停止し、増分コンパイルを無効化して再実行する。
 - **再試行1**: PowerShellが `-Pkotlin.incremental=false` を `.incremental=false` タスクとして渡したため、ビルド開始前に失敗。引数配列で再実行する。
 - **最終結果**: 引数配列で `:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` を実行し、1分43秒で `BUILD SUCCESSFUL`。コンパイルエラーなし。
+
+### 11. 2026-06-19 Forkへのpush認証失敗
+- **事象**: `HTaE0213/core` へのpushがHTTP 403で拒否された。
+- **原因**: 現在のGitHub認証ユーザーが `KHTaE1234` で、Fork所有者 `HTaE0213` と一致しない。
+- **状態**: リモート設定は完了。`HTaE0213` での認証切り替え待ち。

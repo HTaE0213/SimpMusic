@@ -47,3 +47,6 @@
   - `core` のdetached HEADを `codex/simpmusic-enhancements-core` へ移し、実装一式を `be35e8e` としてコミット。
   - 親を `codex/simpmusic-enhancements` へ移し、アプリUIと `core` ポインタを `e471134` としてコミット。
   - `.agents`、`.codex`、`AGENTS.md`、他トピック文書、ログ、画像はコミット対象外として保持。
+  - Fork先として `HTaE0213/core` と `HTaE0213/SimpMusic` を受領し、リモート設定とpushを開始。
+  - 親・`core` とも `origin` をHTaE0213のFork、`upstream` をmaxrave-dev本家へ変更。
+  - GitHub CLIのアクティブアカウントを `KHTaE1234` から `HTaE0213` へ切り替え、`core` ブランチをpush。
