@@ -49,5 +49,5 @@
   - `core`: `codex/simpmusic-enhancements-core` / `be35e8e`
   - 親: `codex/simpmusic-enhancements` / `e471134`
   - ローカル設定・ログ・画像・APKはコミット対象外。
-- [ ] 🔧 in_progress: Forkリモート設定とpush <!-- id: 43 -->
-  - `HTaE0213/core` を `core` の `origin`、`HTaE0213/SimpMusic` を親の `origin` に設定し、本家を `upstream` として保持する。
+- [x] Forkリモート設定とpush <!-- id: 43 -->
+  - `HTaE0213/core` と `HTaE0213/SimpMusic` を `origin`、maxrave-dev本家を `upstream` に設定し、両専用ブランチをpush済み。

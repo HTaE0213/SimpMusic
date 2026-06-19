@@ -20,12 +20,13 @@ SimpMusicをフォークし、複数選択機能の追加、再生再開遅延�
 - 2026-06-19: `:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` が1分43秒で成功。全ABI 4 APKを生成し、サイズ・SHA-256を確認。
 - 2026-06-19: 親を `codex/simpmusic-enhancements`、`core` を `codex/simpmusic-enhancements-core` へ移行。`core` を `be35e8e`、親アプリを `e471134` としてコミット。
 - 2026-06-19: GitHub CLIのアクティブアカウントを `HTaE0213` へ切り替え、`core` ブランチをForkへpush成功。
+- 2026-06-19: 親 `codex/simpmusic-enhancements` も `HTaE0213/SimpMusic` へpush成功。両ブランチに追跡設定済み。
 
 ## アクティブタスク
-- Forkリモート設定と `core` → 親の順序でのpush
+- 生成APKの実機検証
 
 ## 次のアクション
-- 同期文書をコミットし、親 `codex/simpmusic-enhancements` を `HTaE0213/SimpMusic` へpushする。
+- arm64-v8aデバッグAPKを実機へインストールし、共同プレイリスト追加者表示とシークレットモードの記録抑止を確認する。
 
 ## 保留中のユーザー確認事項 (Pending Human Actions)
 - 修正版APKの実機インストールと、共同プレイリスト追加者アバター・シークレットモードの確認。

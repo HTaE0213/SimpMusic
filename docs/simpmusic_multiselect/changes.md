@@ -50,3 +50,4 @@
   - Fork先として `HTaE0213/core` と `HTaE0213/SimpMusic` を受領し、リモート設定とpushを開始。
   - 親・`core` とも `origin` をHTaE0213のFork、`upstream` をmaxrave-dev本家へ変更。
   - GitHub CLIのアクティブアカウントを `KHTaE1234` から `HTaE0213` へ切り替え、`core` ブランチをpush。
+  - 親 `codex/simpmusic-enhancements` を `HTaE0213/SimpMusic` へpushし、両ブランチのupstream trackingを設定。
