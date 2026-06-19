@@ -257,16 +257,19 @@ fun LibraryDynamicPlaylistScreen(
             when (analyticsUIState.topTracks) {
                 is LocalResource.Success if (!analyticsUIState.topTracks.data.isNullOrEmpty()) -> {
                     val data = analyticsUIState.topTracks.data ?: emptyList()
-                    items(
+                    val visibleTopTracks =
                         if (query.isNotEmpty() && showSearchBar) {
                             tempTopTracks
                         } else {
                             data
-                        },
+                        }
+                    items(
+                        visibleTopTracks,
                         key = { it.hashCode() },
                     ) { song ->
                         SongFullWidthItems(
                             songEntity = song.second,
+                            selectionScope = visibleTopTracks.map { it.second.toTrack() },
                             isPlaying = song.second.videoId == nowPlayingVideoId,
                             modifier = Modifier.fillMaxWidth(),
                             onMoreClickListener = {
@@ -321,36 +324,27 @@ fun LibraryDynamicPlaylistScreen(
                 else -> {}
             }
         } else {
-            items(
+            val visibleSongs =
                 when (type) {
                     LibraryDynamicPlaylistType.Downloaded -> {
-                        if (query.isNotEmpty() && showSearchBar) {
-                            tempDownloaded
-                        } else {
-                            downloaded
-                        }
+                        if (query.isNotEmpty() && showSearchBar) tempDownloaded else downloaded
                     }
 
                     LibraryDynamicPlaylistType.Favorite -> {
-                        if (query.isNotEmpty() && showSearchBar) {
-                            tempFavorite
-                        } else {
-                            favorite
-                        }
+                        if (query.isNotEmpty() && showSearchBar) tempFavorite else favorite
                     }
 
                     LibraryDynamicPlaylistType.MostPlayed -> {
-                        if (query.isNotEmpty() && showSearchBar) {
-                            tempMostPlayed
-                        } else {
-                            mostPlayed
-                        }
+                        if (query.isNotEmpty() && showSearchBar) tempMostPlayed else mostPlayed
                     }
-                },
+                }
+            items(
+                visibleSongs,
                 key = { it.hashCode() },
             ) { song ->
                 SongFullWidthItems(
                     songEntity = song,
+                    selectionScope = visibleSongs.map { it.toTrack() },
                     isPlaying = song.videoId == nowPlayingVideoId,
                     modifier = Modifier.fillMaxWidth(),
                     onMoreClickListener = {

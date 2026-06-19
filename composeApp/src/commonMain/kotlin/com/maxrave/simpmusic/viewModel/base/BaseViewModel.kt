@@ -85,6 +85,15 @@ abstract class BaseViewModel :
                 .getString(resId)
         }
 
+    protected fun getString(
+        resId: StringResource,
+        vararg formatArgs: Any,
+    ): String =
+        runBlocking {
+            org.jetbrains.compose.resources
+                .getString(resId, *formatArgs)
+        }
+
     // Loading dialog
     private val _showLoadingDialog: MutableStateFlow<Pair<Boolean, String>> = MutableStateFlow(false to getString(Res.string.loading))
     val showLoadingDialog: StateFlow<Pair<Boolean, String>> get() = _showLoadingDialog

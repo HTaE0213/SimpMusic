@@ -104,6 +104,10 @@ fun RecentlySongsScreen(
                         val recentlyAddedString = stringResource(Res.string.recently_added)
                         SongFullWidthItems(
                             songEntity = item,
+                            selectionScope =
+                                recentlyItems.itemSnapshotList.items
+                                    .filterIsInstance<SongEntity>()
+                                    .map { it.toTrack() },
                             isPlaying = playingTrack?.videoId == item.videoId && isPlaying,
                             onClickListener = { videoId ->
                                 val firstQueue = item.toTrack()

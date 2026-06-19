@@ -847,6 +847,7 @@ fun AlbumScreen(
                                     isPlaying = item.videoId == playingVideoId,
                                     index = index,
                                     track = item,
+                                    selectionScope = uiState.listTrack,
                                     onMoreClickListener = {
                                         chosenSong = item
                                         showBottomSheet = true

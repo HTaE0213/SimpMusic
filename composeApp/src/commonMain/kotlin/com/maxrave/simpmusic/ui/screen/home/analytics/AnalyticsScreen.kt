@@ -406,6 +406,7 @@ fun AnalyticsScreen(
                                 val song = pair.second.toTrack()
                                 SongFullWidthItems(
                                     track = song,
+                                    selectionScope = records.map { it.second.toTrack() },
                                     isPlaying = song.videoId == playingTrack,
                                     modifier = Modifier.fillMaxWidth(),
                                     onMoreClickListener = {
@@ -642,6 +643,7 @@ fun AnalyticsScreen(
                                 val song = pair.second.toTrack()
                                 SongFullWidthItems(
                                     track = song,
+                                    selectionScope = tracks.map { it.second.toTrack() },
                                     isPlaying = song.videoId == playingTrack,
                                     modifier = Modifier.fillMaxWidth(),
                                     onMoreClickListener = {

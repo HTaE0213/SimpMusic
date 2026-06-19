@@ -339,6 +339,7 @@ fun ArtistScreen(
                                 state.data.popularSongs.forEach { song ->
                                     SongFullWidthItems(
                                         track = song,
+                                        selectionScope = state.data.popularSongs,
                                         isPlaying = song.videoId == playingTrack,
                                         modifier = Modifier.fillMaxWidth(),
                                         onMoreClickListener = {

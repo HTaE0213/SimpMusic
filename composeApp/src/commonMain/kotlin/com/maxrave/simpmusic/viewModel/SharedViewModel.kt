@@ -97,6 +97,7 @@ import simpmusic.composeapp.generated.resources.added_to_queue
 import simpmusic.composeapp.generated.resources.added_to_youtube_liked
 import simpmusic.composeapp.generated.resources.error
 import simpmusic.composeapp.generated.resources.play_next
+import simpmusic.composeapp.generated.resources.multiselect_result_summary
 import simpmusic.composeapp.generated.resources.removed_from_youtube_liked
 import simpmusic.composeapp.generated.resources.shared
 import simpmusic.composeapp.generated.resources.updated
@@ -1788,8 +1789,10 @@ class SharedViewModel(
         val tracks = _selectedTracks.value.toList()
         if (tracks.isNotEmpty()) {
             viewModelScope.launch(Dispatchers.IO) {
-                var failureMessage: String? = null
+                var successCount = 0
+                var failureCount = 0
                 tracks.forEach { track ->
+                    var terminalResult: Boolean? = null
                     localPlaylistRepository.addTrackToLocalPlaylist(
                         id = playlistId,
                         song = track.toSongEntity(),
@@ -1797,12 +1800,23 @@ class SharedViewModel(
                         updatedYtMessage = updatedYtMessage,
                         errorMessage = errorMessage
                     ).collect { result ->
-                        if (result is LocalResource.Error) {
-                            failureMessage = result.message ?: errorMessage
+                        when (result) {
+                            is LocalResource.Success -> terminalResult = true
+                            is LocalResource.Error -> {
+                                terminalResult = false
+                            }
+                            is LocalResource.Loading -> Unit
                         }
                     }
+                    if (terminalResult == true) successCount++ else failureCount++
                 }
-                makeToast(failureMessage ?: successMessage)
+                makeToast(
+                    if (failureCount == 0) {
+                        successMessage
+                    } else {
+                        getString(Res.string.multiselect_result_summary, successCount, failureCount)
+                    },
+                )
                 clearSelection()
             }
         }
@@ -1816,20 +1830,34 @@ class SharedViewModel(
         if (tracks.isNotEmpty()) {
             viewModelScope.launch(Dispatchers.IO) {
                 var resultMessage: String? = null
-                var failureMessage: String? = null
+                var successCount = 0
+                var failureCount = 0
                 tracks.forEach { track ->
+                    var terminalResult: Boolean? = null
                     localPlaylistRepository.addYouTubePlaylistItem(
                         youtubePlaylistId = playlistId,
                         videoId = track.videoId,
                     ).collect { result ->
                         when (result) {
-                            is LocalResource.Success -> resultMessage = result.data
-                            is LocalResource.Error -> failureMessage = result.message ?: errorMessage
+                            is LocalResource.Success -> {
+                                terminalResult = true
+                                resultMessage = result.data
+                            }
+                            is LocalResource.Error -> {
+                                terminalResult = false
+                            }
                             is LocalResource.Loading -> Unit
                         }
                     }
+                    if (terminalResult == true) successCount++ else failureCount++
                 }
-                makeToast(failureMessage ?: resultMessage ?: errorMessage)
+                makeToast(
+                    if (failureCount == 0) {
+                        resultMessage ?: errorMessage
+                    } else {
+                        getString(Res.string.multiselect_result_summary, successCount, failureCount)
+                    },
+                )
                 clearSelection()
             }
         }

@@ -146,6 +146,10 @@ fun LibraryItem(
                                     RecentlyType.Type.SONG -> {
                                         SongFullWidthItems(
                                             songEntity = item as SongEntity,
+                                            selectionScope =
+                                                state.data
+                                                    .filterIsInstance<SongEntity>()
+                                                    .map { it.toTrack() },
                                             isPlaying = item.videoId == state.type.playingVideoId,
                                             modifier = Modifier,
                                             onMoreClickListener = {
