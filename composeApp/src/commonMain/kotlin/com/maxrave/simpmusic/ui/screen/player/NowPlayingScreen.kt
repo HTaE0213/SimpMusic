@@ -71,6 +71,7 @@ import androidx.compose.material.icons.rounded.Forward5
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Replay5
 import androidx.compose.material.icons.rounded.ThumbsUpDown
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -191,6 +192,8 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import simpmusic.composeapp.generated.resources.Res
+import simpmusic.composeapp.generated.resources.quick_highlight_medley
+import simpmusic.composeapp.generated.resources.quick_incognito
 import simpmusic.composeapp.generated.resources.artists
 import simpmusic.composeapp.generated.resources.baseline_fullscreen_24
 import simpmusic.composeapp.generated.resources.baseline_more_vert_24
@@ -290,6 +293,7 @@ fun NowPlayingScreenContent(
     val timelineState by sharedViewModel.timeline.collectAsStateWithLifecycle()
     val likeStatus by sharedViewModel.likeStatus.collectAsStateWithLifecycle()
     val highlightModeEnabled by sharedViewModel.highlightModeEnabled.collectAsStateWithLifecycle()
+    val incognitoModeEnabled by sharedViewModel.incognitoModeEnabled.collectAsStateWithLifecycle()
 
     val shouldShowVideo by sharedViewModel.getVideo.collectAsStateWithLifecycle()
     val translatedVoteState by sharedViewModel.translatedVoteState.collectAsStateWithLifecycle()
@@ -1866,15 +1870,45 @@ fun NowPlayingScreenContent(
                                         }
 
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            IconButton(
+                                            TextButton(
                                                 modifier =
                                                     Modifier
-                                                        .size(24.dp)
-                                                        .aspectRatio(1f)
-                                                        .clip(CircleShape),
+                                                        .height(32.dp)
+                                                        .background(
+                                                            if (incognitoModeEnabled) sliderTrackColor.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.10f),
+                                                            RoundedCornerShape(16.dp),
+                                                        ),
+                                                contentPadding = PaddingValues(horizontal = 8.dp),
+                                                onClick = {
+                                                    sharedViewModel.setIncognitoModeEnabled(!incognitoModeEnabled)
+                                                },
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.VisibilityOff,
+                                                    tint = if (incognitoModeEnabled) sliderTrackColor else Color.White,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                    text = stringResource(Res.string.quick_incognito),
+                                                    color = if (incognitoModeEnabled) sliderTrackColor else Color.White,
+                                                    style = typo().labelSmall,
+                                                )
+                                            }
+
+                                            TextButton(
+                                                modifier =
+                                                    Modifier
+                                                        .height(32.dp)
+                                                        .background(
+                                                            if (highlightModeEnabled) sliderTrackColor.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.10f),
+                                                            RoundedCornerShape(16.dp),
+                                                        ),
+                                                contentPadding = PaddingValues(horizontal = 8.dp),
                                                 onClick = {
                                                     sharedViewModel.setHighlightModeEnabled(!highlightModeEnabled)
                                                 },
@@ -1882,7 +1916,14 @@ fun NowPlayingScreenContent(
                                                 Icon(
                                                     imageVector = Icons.Filled.AutoAwesome,
                                                     tint = if (highlightModeEnabled) sliderTrackColor else Color.White,
-                                                    contentDescription = stringResource(Res.string.highlight_mode_title),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                    text = stringResource(Res.string.quick_highlight_medley),
+                                                    color = if (highlightModeEnabled) sliderTrackColor else Color.White,
+                                                    style = typo().labelSmall,
                                                 )
                                             }
 

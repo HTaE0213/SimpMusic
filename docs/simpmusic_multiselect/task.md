@@ -50,7 +50,10 @@
 - [x] コードレビュー軽微指摘の修正 <!-- id: 44 -->
   - 一括追加の成功/失敗件数表示、全選択スコープ補完、実装タスクと実機検証タスクの分離。`assembleDebug` 成功。
 - [ ] 👤 waiting_human: 全画面複数選択・戻る解除・全選択・一括操作の実機確認 <!-- id: 45 -->
-- [ ] 👤 waiting_human: 共同プレイリスト追加者アバターと削除・並べ替えAPIの実機確認 <!-- id: 46 -->
+- [ ] 👤 waiting_human: 共同プレイリスト追加者アバターと削除・ドラッグ並べ替えAPIの実機再確認 <!-- id: 46 -->
 - [ ] 👤 waiting_human: シークレット中の履歴・分析・再生回数非記録の確認 <!-- id: 47 -->
-- [ ] 👤 waiting_human: 通知メタデータとオリジナル表記追従の確認 <!-- id: 48 -->
+- [ ] 👤 waiting_human: メタデータ初回表示とアルバム発売年の実機再確認 <!-- id: 48 -->
 - [ ] 👤 waiting_human: 再生開始遅延・メドレー待ち時間・再起動後復元の確認 <!-- id: 49 -->
+- [ ] 👤 waiting_human: 再生画面のシークレット・サビメドレークイック切替を実機確認 <!-- id: 50 -->
+- [x] 2026-06-19 実機フィードバック修正版APK生成 <!-- id: 51 -->
+  - `:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` が `BUILD SUCCESSFUL`。全ABI APKを23:14に生成。

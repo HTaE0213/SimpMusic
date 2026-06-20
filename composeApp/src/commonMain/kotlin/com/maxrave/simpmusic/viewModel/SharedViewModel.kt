@@ -239,6 +239,10 @@ class SharedViewModel(
         dataStoreManager.highlightModeEnabled
             .map { it == TRUE }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), false)
+    val incognitoModeEnabled: StateFlow<Boolean> =
+        dataStoreManager.incognitoModeEnabled
+            .map { it == TRUE }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), false)
     private val _shareSavedLyrics: MutableStateFlow<Boolean> = MutableStateFlow(true)
     val shareSavedLyrics: StateFlow<Boolean> get() = _shareSavedLyrics
 
@@ -1916,6 +1920,12 @@ class SharedViewModel(
     fun setHighlightModeEnabled(enabled: Boolean) {
         viewModelScope.launch {
             dataStoreManager.setHighlightModeEnabled(enabled)
+        }
+    }
+
+    fun setIncognitoModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            dataStoreManager.setIncognitoModeEnabled(enabled)
         }
     }
 

@@ -77,3 +77,16 @@
 - **全選択スコープ**: モーダル内の明示的無効化2箇所以外で、`SongFullWidthItems` の全利用画面へ表示中の曲集合を `selectionScope` として補完。
 - **シークレット除外ID**: 単純な上限削除は非公開再生曲を履歴へ再露出させるため不採用。DB列への移行または履歴削除連動の掃除が必要で、非阻断課題として維持。
 - **検証**: 英日XML構文と `git diff --check` に加え、`:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` が1分20秒で成功。
+# 2026-06-19 実機再報告
+
+- YouTubeプレイリストの並べ替えが本家相当の操作になっていない。
+- 共同編集者の曲追加者アバターが表示されない。
+- 曲名・アルバム名・アーティスト名が日本語表示から徐々に英語へ変化し、遅い。
+- アルバム発売年が `null` と表示される。
+- シークレット・サビメドレー切替が設定画面内で見つけにくい。
+- 端末未接続のため、共同編集者の現行JSON応答はこのセッションでは未採取。
+- 親・`core` の `git diff --check` 成功。英日 `strings.xml` のXML解析成功。
+- APK初回再ビルドはPowerShellが `-Pkotlin.incremental=false` を `.incremental=false` タスクとして渡したため失敗。コードコンパイル前の引数エラー。引数配列方式へ変更。
+- 引数修正後のビルドは `AlbumParser.kt:78` の `ResultAlbum.year` 非null型不一致で失敗。欠損時を空文字へ修正し、再ビルド対象。
+- 次のビルドは `PlaylistScreen.kt:461/462/468/469` のドラッグ終了コールバック型推論で失敗。`Unit` コールバック型を明示して修正。
+- 3回目のコードビルドは `BUILD SUCCESSFUL in 1m 16s`。全ABIデバッグAPK生成済み。実機挙動は未検証。

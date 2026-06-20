@@ -572,6 +572,8 @@
     <string name="multiselect_error">An error occurred</string>
     <string name="multiselect_result_summary">%1$d succeeded, %2$d failed</string>
     <string name="highlight_mode_title">Highlight medley playback</string>
+    <string name="quick_incognito">Incognito</string>
+    <string name="quick_highlight_medley">Highlight</string>
     <string name="highlight_mode_subtitle">Automatically play only the highlight of each song</string>
     <string name="highlight_duration_title">Highlight duration</string>
     <string name="highlight_duration_select_title">Select playback duration</string>

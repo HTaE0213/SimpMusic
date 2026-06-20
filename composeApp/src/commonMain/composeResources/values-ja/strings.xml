@@ -497,6 +497,8 @@
     <string name="multiselect_error">エラーが発生しました</string>
     <string name="multiselect_result_summary">成功 %1$d 件、失敗 %2$d 件</string>
     <string name="highlight_mode_title">サビメドレー再生（ハイライト）</string>
+    <string name="quick_incognito">シークレット</string>
+    <string name="quick_highlight_medley">サビメドレー</string>
     <string name="highlight_mode_subtitle">曲のサビ部分のみを自動で連続再生します</string>
     <string name="highlight_duration_title">メドレー再生時間</string>
     <string name="highlight_duration_select_title">再生時間を選択</string>

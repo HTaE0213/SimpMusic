@@ -96,7 +96,6 @@ import simpmusic.composeapp.generated.resources.download_for_offline_white
 import simpmusic.composeapp.generated.resources.holder
 import simpmusic.composeapp.generated.resources.playlist
 import androidx.compose.runtime.LaunchedEffect
-import com.maxrave.data.helper.MetadataLanguageHelper
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.Checkbox
@@ -141,29 +140,11 @@ fun SongFullWidthItems(
     val selectedTracks by sharedViewModel.selectedTracks.collectAsState()
     val isSelected = currentTrack?.let { ct -> selectedTracks.any { it.videoId == ct.videoId } } ?: false
 
-    val resolvedSongs by MetadataLanguageHelper.resolvedSongs.collectAsState()
-
-    val videoId = track?.videoId ?: songEntity?.videoId ?: ""
-    val rawTitle = track?.title ?: songEntity?.title ?: ""
-    val rawArtist = track?.artists?.firstOrNull()?.name ?: songEntity?.artistName?.firstOrNull() ?: ""
-
-    val displayTitle = resolvedSongs[videoId]?.title ?: rawTitle
-    val displayArtist = resolvedSongs[videoId]?.artist ?: (
+    val displayTitle = track?.title ?: songEntity?.title ?: ""
+    val displayArtist =
         track?.artists?.toListName()?.connectArtists()
             ?: songEntity?.artistName?.connectArtists()
             ?: ""
-    )
-
-    LaunchedEffect(videoId, rawTitle, rawArtist) {
-        if (videoId.isNotEmpty()) {
-            MetadataLanguageHelper.resolveSongMetadata(
-                scope = coroutineScope,
-                videoId = videoId,
-                currentTitle = rawTitle,
-                currentArtist = rawArtist
-            )
-        }
-    }
     val composition by rememberLottieComposition {
         LottieCompositionSpec.JsonString(
             Res.readBytes("files/audio_playing_animation.json").decodeToString(),

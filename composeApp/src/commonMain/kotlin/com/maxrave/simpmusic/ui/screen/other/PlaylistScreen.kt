@@ -6,12 +6,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,8 +49,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Done
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
@@ -70,11 +74,14 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -112,6 +119,7 @@ import com.maxrave.simpmusic.extension.getStringBlocking
 import com.maxrave.simpmusic.getPlatform
 import com.maxrave.simpmusic.ui.component.CenterLoadingBox
 import com.maxrave.simpmusic.ui.component.DescriptionView
+import com.maxrave.simpmusic.ui.component.DraggableItem
 import com.maxrave.simpmusic.ui.component.EndOfPage
 import com.maxrave.simpmusic.ui.component.HeartCheckBox
 import com.maxrave.simpmusic.ui.component.LoadingDialog
@@ -121,6 +129,7 @@ import com.maxrave.simpmusic.ui.component.LiquidGlassIconButton
 import com.maxrave.simpmusic.ui.component.RippleIconButton
 import com.maxrave.simpmusic.ui.component.liquidGlass
 import com.maxrave.simpmusic.ui.component.SongFullWidthItems
+import com.maxrave.simpmusic.ui.component.rememberDragDropState
 import com.maxrave.simpmusic.ui.navigation.destination.list.ArtistDestination
 import com.maxrave.simpmusic.ui.theme.md_theme_dark_background
 import com.maxrave.simpmusic.ui.theme.seed
@@ -142,6 +151,8 @@ import io.github.alexzhirkevich.compottie.LottieCompositionSpec
 import io.github.alexzhirkevich.compottie.rememberLottieComposition
 import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -165,15 +176,18 @@ import simpmusic.composeapp.generated.resources.downloading
 import simpmusic.composeapp.generated.resources.edit
 import simpmusic.composeapp.generated.resources.error
 import simpmusic.composeapp.generated.resources.holder
-import simpmusic.composeapp.generated.resources.move_down
-import simpmusic.composeapp.generated.resources.move_up
 import simpmusic.composeapp.generated.resources.no_description
 import simpmusic.composeapp.generated.resources.playlist
 import simpmusic.composeapp.generated.resources.radio
 import simpmusic.composeapp.generated.resources.search
 import simpmusic.composeapp.generated.resources.unlimited
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
+@OptIn(
+    ExperimentalCoroutinesApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalHazeMaterialsApi::class,
+    ExperimentalFoundationApi::class,
+)
 @Composable
 fun PlaylistScreen(
     viewModel: PlaylistViewModel = koinViewModel(),
@@ -402,12 +416,60 @@ fun PlaylistScreen(
                     rememberHazeState(
                         blurEnabled = true,
                     )
+                val coroutineScope = rememberCoroutineScope()
+                val dragDropState =
+                    rememberDragDropState(lazyState) { from, to ->
+                        viewModel.moveYouTubePlaylistItem(data.id, from - 1, to - 1)
+                    }
+                var overscrollJob by remember { mutableStateOf<Job?>(null) }
                 LazyColumn(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .background(if (isMobilePortrait) mutedPaletteBg else Color.Black)
-                            .hazeSource(hazeState),
+                            .hazeSource(hazeState)
+                            .pointerInput(changingOrder, playlistEditing) {
+                                if (!changingOrder || playlistEditing) return@pointerInput
+                                val onDrag: (androidx.compose.ui.input.pointer.PointerInputChange, Offset) -> Unit =
+                                    { change, offset ->
+                                        change.consume()
+                                        dragDropState.onDrag(offset)
+                                        if (overscrollJob?.isActive != true) {
+                                            dragDropState.checkForOverScroll().takeIf { it != 0f }?.let { amount ->
+                                                overscrollJob =
+                                                    coroutineScope.launch {
+                                                        dragDropState.state.animateScrollBy(
+                                                            amount * 1.3f,
+                                                            tween(easing = FastOutLinearInEasing),
+                                                        )
+                                                    }
+                                            } ?: overscrollJob?.cancel()
+                                        }
+                                    }
+                                val onDragEnd: () -> Unit = {
+                                    dragDropState.onDragInterrupted(true)
+                                    overscrollJob?.cancel()
+                                }
+                                val onDragCancel: () -> Unit = {
+                                    dragDropState.onDragInterrupted()
+                                    overscrollJob?.cancel()
+                                }
+                                if (getPlatform() == Platform.Desktop) {
+                                    detectDragGestures(
+                                        onDragStart = dragDropState::onDragStart,
+                                        onDrag = onDrag,
+                                        onDragEnd = onDragEnd,
+                                        onDragCancel = onDragCancel,
+                                    )
+                                } else {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = dragDropState::onDragStart,
+                                        onDrag = onDrag,
+                                        onDragEnd = onDragEnd,
+                                        onDragCancel = onDragCancel,
+                                    )
+                                }
+                            },
                     state = lazyState,
                 ) {
                     if (!showSearchBar) {
@@ -1083,11 +1145,13 @@ fun PlaylistScreen(
                     }) { index ->
                         val item = filteredTrack.getOrNull(index)
                         if (item != null) {
-                            Column(modifier = Modifier.animateItem()) {
+                            val content = @Composable { modifier: Modifier ->
+                                Column(modifier = modifier) {
                                 if (playingTrack?.videoId == item.videoId && isPlaying) {
                                     SongFullWidthItems(
                                         isPlaying = true,
                                         track = item,
+                                        shouldShowDragHandle = changingOrder,
                                         enableMultiSelect = !changingOrder,
                                         selectionScope = filteredTrack,
                                         onMoreClickListener = if (changingOrder) null else ({ onItemMoreClick(it) }),
@@ -1101,31 +1165,12 @@ fun PlaylistScreen(
                                             )
                                         },
                                         modifier = Modifier,
-                                        rightView = if (isYourYouTubePlaylist && changingOrder) {
-                                            {
-                                                Row {
-                                                    IconButton(
-                                                        enabled = !playlistEditing && index > 0,
-                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index - 1) },
-                                                    ) {
-                                                        Icon(Icons.Rounded.KeyboardArrowUp, stringResource(Res.string.move_up))
-                                                    }
-                                                    IconButton(
-                                                        enabled = !playlistEditing && index < filteredTrack.lastIndex,
-                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index + 1) },
-                                                    ) {
-                                                        Icon(Icons.Rounded.KeyboardArrowDown, stringResource(Res.string.move_down))
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            null
-                                        },
                                     )
                                 } else {
                                     SongFullWidthItems(
                                         isPlaying = false,
                                         track = item,
+                                        shouldShowDragHandle = changingOrder,
                                         enableMultiSelect = !changingOrder,
                                         selectionScope = filteredTrack,
                                         onMoreClickListener = if (changingOrder) null else ({ onItemMoreClick(it) }),
@@ -1139,26 +1184,6 @@ fun PlaylistScreen(
                                             )
                                         },
                                         modifier = Modifier,
-                                        rightView = if (isYourYouTubePlaylist && changingOrder) {
-                                            {
-                                                Row {
-                                                    IconButton(
-                                                        enabled = !playlistEditing && index > 0,
-                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index - 1) },
-                                                    ) {
-                                                        Icon(Icons.Rounded.KeyboardArrowUp, stringResource(Res.string.move_up))
-                                                    }
-                                                    IconButton(
-                                                        enabled = !playlistEditing && index < filteredTrack.lastIndex,
-                                                        onClick = { viewModel.moveYouTubePlaylistItem(data.id, index, index + 1) },
-                                                    ) {
-                                                        Icon(Icons.Rounded.KeyboardArrowDown, stringResource(Res.string.move_down))
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            null
-                                        },
                                     )
                                 }
                                 if (isMobilePortrait && index < filteredTrack.size - 1) {
@@ -1168,6 +1193,14 @@ fun PlaylistScreen(
                                         color = Color.White.copy(alpha = 0.12f),
                                     )
                                 }
+                                }
+                            }
+                            if (changingOrder) {
+                                DraggableItem(dragDropState, index + 1, Modifier.animateItem()) {
+                                    content(Modifier)
+                                }
+                            } else {
+                                content(Modifier.animateItem())
                             }
                         }
                     }
