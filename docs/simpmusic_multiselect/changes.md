@@ -75,3 +75,4 @@
 - 未検証。ロールバックは本節に対応する親リポジトリ差分を戻す。
 - ビルド証跡: `BUILD SUCCESSFUL in 1m 7s`。arm64-v8a APKは62.21 MB、SHA-256 `BF5EFEC1691B9F9E2318FE9D62DD5AEA4E44D753B524ACBBD27D41C7B09F3108`。
 - ADB更新インストールと起動に成功。アプリPIDの致命的エラーなし。
+- 親コミット: `d25777f` (`fix(ui): Keep playlist and player actions visible`)。Forkへpush済み。
