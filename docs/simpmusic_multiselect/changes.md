@@ -85,3 +85,4 @@
 - `done` の生成リソースimport不足を追加修正。
 - ビルド証跡: `BUILD SUCCESSFUL in 1m 6s`。arm64-v8a APKは61.77 MB、SHA-256 `CB2F64E7C3BE6FCBC1E0B94C7BA3ED5217E53C2B34164056A8A61644C8960699`。
 - ADB更新インストール成功。Now Playingの両モードボタンはシステムナビゲーション領域より上に表示。
+- 親コミット: `74618ca` (`fix(ui): Restore playlist drag and bottom controls`)。Forkへpush済み。
