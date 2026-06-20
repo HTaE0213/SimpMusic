@@ -86,3 +86,13 @@
 - ビルド証跡: `BUILD SUCCESSFUL in 1m 6s`。arm64-v8a APKは61.77 MB、SHA-256 `CB2F64E7C3BE6FCBC1E0B94C7BA3ED5217E53C2B34164056A8A61644C8960699`。
 - ADB更新インストール成功。Now Playingの両モードボタンはシステムナビゲーション領域より上に表示。
 - 親コミット: `74618ca` (`fix(ui): Restore playlist drag and bottom controls`)。Forkへpush済み。
+
+# 2026-06-20 実機オンライン検証＆リソース修正
+
+- 所有YouTubeプレイリストの編集画面において、日本語ロケール下で「完了」アイコンの `contentDescription` が定義されておらず英語の `Done` にフォールバックする不具合を特定。
+- `composeApp/src/commonMain/composeResources/values-ja/strings.xml` に `<string name="done">完了</string>` を追加。
+- ビルド・インストールし、日本語で「完了」と正しく表示・読み上げられることを実機ダンプで確認（Bug Bの解決）。
+- ビルド証跡: `BUILD SUCCESSFUL in 59s`。arm64-v8a APKは61.77 MB、SHA-256 `0A4B327A1042BA4087D60EED5E8C98C2240E3B1566686366A3CA199616CDD61C`。
+- 編集モード中に曲行をタップした際の誤動作（再生開始）が発生しないようクリックイベントが無効化されていることを確認（Bug Aのクリック競合解消）。
+- Now Playing画面の下部コントロールボタン群が、システムバーインセット適用によりナビゲーションバー（Y=2252〜2362）と被らず、最下端 Y=2195 で表示されていることをbounds情報から確認（重なり解消の再確認）。
+- 対象操作後のlogcatを確認し、SimpMusicプロセスのFatal / Exceptionが検出されないことを確認。

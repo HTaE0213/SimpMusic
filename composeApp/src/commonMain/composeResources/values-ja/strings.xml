@@ -81,6 +81,7 @@
     <string name="playlist_name">再生リスト名</string>
     <string name="create">作成</string>
     <string name="edit">編集</string>
+    <string name="done">完了</string>
     <string name="edit_title">題名を編集</string>
     <string name="edit_thumbnail">サムネイルを編集</string>
     <string name="delete_playlist">再生リストの削除</string>
