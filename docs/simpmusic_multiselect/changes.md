@@ -76,3 +76,12 @@
 - ビルド証跡: `BUILD SUCCESSFUL in 1m 7s`。arm64-v8a APKは62.21 MB、SHA-256 `BF5EFEC1691B9F9E2318FE9D62DD5AEA4E44D753B524ACBBD27D41C7B09F3108`。
 - ADB更新インストールと起動に成功。アプリPIDの致命的エラーなし。
 - 親コミット: `d25777f` (`fix(ui): Keep playlist and player actions visible`)。Forkへpush済み。
+# 2026-06-20 実機デバッグ追加修正
+
+- ドラッグハンドル表示中は曲行のclickableを外し、親LazyColumnへ長押しドラッグを渡す。
+- 編集/完了アイコンのcontentDescriptionを状態に応じて切り替える。
+- Now Playing下部アクション後へシステムナビゲーションバー高さの余白を追加。
+- 他エージェント差分をレビュー済み。ビルド・実機検証前。
+- `done` の生成リソースimport不足を追加修正。
+- ビルド証跡: `BUILD SUCCESSFUL in 1m 6s`。arm64-v8a APKは61.77 MB、SHA-256 `CB2F64E7C3BE6FCBC1E0B94C7BA3ED5217E53C2B34164056A8A61644C8960699`。
+- ADB更新インストール成功。Now Playingの両モードボタンはシステムナビゲーション領域より上に表示。

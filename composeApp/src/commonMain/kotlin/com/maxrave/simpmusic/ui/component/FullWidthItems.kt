@@ -199,10 +199,13 @@ fun SongFullWidthItems(
                                     }
                                 }
                             )
-                        } else {
+                        } else if (!shouldShowDragHandle) {
+                            // Let the parent list own long-press gestures while reordering.
                             Modifier.clickable {
                                 onClickListener?.invoke(track?.videoId ?: songEntity?.videoId ?: "")
                             }
+                        } else {
+                            Modifier
                         }
                     )
                     .animateContentSize()

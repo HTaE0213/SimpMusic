@@ -173,6 +173,7 @@ import simpmusic.composeapp.generated.resources.baseline_shuffle_24
 import simpmusic.composeapp.generated.resources.download_button
 import simpmusic.composeapp.generated.resources.downloaded
 import simpmusic.composeapp.generated.resources.downloading
+import simpmusic.composeapp.generated.resources.done
 import simpmusic.composeapp.generated.resources.edit
 import simpmusic.composeapp.generated.resources.error
 import simpmusic.composeapp.generated.resources.holder
@@ -714,7 +715,7 @@ fun PlaylistScreen(
                                                             ) {
                                                                 Icon(
                                                                     imageVector = if (changingOrder) Icons.Rounded.Done else Icons.Rounded.Edit,
-                                                                    contentDescription = stringResource(Res.string.edit),
+                                                                    contentDescription = stringResource(if (changingOrder) Res.string.done else Res.string.edit),
                                                                     tint = Color.White,
                                                                 )
                                                             }
@@ -1068,7 +1069,7 @@ fun PlaylistScreen(
                                                             ) {
                                                                 Icon(
                                                                     imageVector = if (changingOrder) Icons.Rounded.Done else Icons.Rounded.Edit,
-                                                                    contentDescription = stringResource(Res.string.edit),
+                                                                    contentDescription = stringResource(if (changingOrder) Res.string.done else Res.string.edit),
                                                                     tint = Color.White,
                                                                 )
                                                             }

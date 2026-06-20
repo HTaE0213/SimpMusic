@@ -1951,6 +1951,13 @@ fun NowPlayingScreenContent(
                                             }
                                         }
                                     }
+                                    // Keep the bottom actions above the system navigation bar.
+                                    Spacer(
+                                        modifier =
+                                            Modifier.height(
+                                                with(localDensity) { WindowInsets.systemBars.getBottom(localDensity).toDp() },
+                                            ),
+                                    )
                                 }
                                 this@Column.AnimatedVisibility(
                                     visible = !showHideControlLayout,
