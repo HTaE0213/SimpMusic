@@ -67,3 +67,4 @@
 - 未検証。ロールバックは本節に対応する `core` 差分を戻す。
 - ビルド証跡: `:androidApp:assembleDebug` 成功。arm64-v8a APKは61.77 MB、SHA-256 `B7D5ACE2502BE2AED545EA90F074FDF70EA0644B9D69139EE29E248B4B956F0D`。
 - `core` コミット: `c4d5c1f` (`fix(metadata): Load original names and album years`)。Forkへpush済み。
+- 親コミット: `8bee716` (`feat(player): Improve playlist editing and mode controls`)。Forkへpush済み。
