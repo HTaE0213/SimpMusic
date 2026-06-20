@@ -68,3 +68,10 @@
 - ビルド証跡: `:androidApp:assembleDebug` 成功。arm64-v8a APKは61.77 MB、SHA-256 `B7D5ACE2502BE2AED545EA90F074FDF70EA0644B9D69139EE29E248B4B956F0D`。
 - `core` コミット: `c4d5c1f` (`fix(metadata): Load original names and album years`)。Forkへpush済み。
 - 親コミット: `8bee716` (`feat(player): Improve playlist editing and mode controls`)。Forkへpush済み。
+# 2026-06-20 実機レイアウト再修正
+
+- 縦画面の所有YouTubeプレイリストで、検索とメニューの間に編集/完了トグルを追加。
+- Now Playing下部のシークレット・サビメドレーをラベル付きボタンから32dp状態付きアイコンへ変更。
+- 未検証。ロールバックは本節に対応する親リポジトリ差分を戻す。
+- ビルド証跡: `BUILD SUCCESSFUL in 1m 7s`。arm64-v8a APKは62.21 MB、SHA-256 `BF5EFEC1691B9F9E2318FE9D62DD5AEA4E44D753B524ACBBD27D41C7B09F3108`。
+- ADB更新インストールと起動に成功。アプリPIDの致命的エラーなし。

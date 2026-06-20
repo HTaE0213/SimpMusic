@@ -90,3 +90,10 @@
 - 引数修正後のビルドは `AlbumParser.kt:78` の `ResultAlbum.year` 非null型不一致で失敗。欠損時を空文字へ修正し、再ビルド対象。
 - 次のビルドは `PlaylistScreen.kt:461/462/468/469` のドラッグ終了コールバック型推論で失敗。`Unit` コールバック型を明示して修正。
 - 3回目のコードビルドは `BUILD SUCCESSFUL in 1m 16s`。全ABIデバッグAPK生成済み。実機挙動は未検証。
+# 2026-06-20 レイアウト再修正検証
+
+- `:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false`: `BUILD SUCCESSFUL in 1m 7s`。
+- ADB端末 `3B1F4TE9ZUZ810Y7` へ `install -r` 成功。データを保持して起動成功。
+- ホームと縦画面プレイリスト表示でクラッシュなし。
+- ホーム推薦のプレイリストは所有フラグなしで開かれたため、所有時のみ表示される編集アイコンは未確認。
+- Now Playingは新規再生による履歴変更を避けたため未確認。

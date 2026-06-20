@@ -57,3 +57,6 @@
 - [ ] 👤 waiting_human: 再生画面のシークレット・サビメドレークイック切替を実機確認 <!-- id: 50 -->
 - [x] 2026-06-19 実機フィードバック修正版APK生成 <!-- id: 51 -->
   - `:androidApp:assembleDebug --no-daemon -Pkotlin.incremental=false` が `BUILD SUCCESSFUL`。全ABI APKを23:14に生成。
+- [x] 縦画面YouTubeプレイリストヘッダーへ編集・完了トグルを追加（ビルド成功） <!-- id: 52 -->
+- [x] Now Playingクイック設定を小画面対応アイコンへ変更（ビルド成功） <!-- id: 53 -->
+- [ ] 👤 waiting_human: 所有プレイリストとNow Playingでレイアウト再修正を目視確認 <!-- id: 54 -->

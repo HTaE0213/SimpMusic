@@ -703,6 +703,22 @@ fun PlaylistScreen(
                                                         ) {
                                                             Icon(Icons.Rounded.Search, null, tint = Color.White)
                                                         }
+                                                        if (isYourYouTubePlaylist) {
+                                                            IconButton(
+                                                                enabled = !playlistEditing,
+                                                                onClick = {
+                                                                    changingOrder = !changingOrder
+                                                                    showSearchBar = false
+                                                                    query = ""
+                                                                },
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = if (changingOrder) Icons.Rounded.Done else Icons.Rounded.Edit,
+                                                                    contentDescription = stringResource(Res.string.edit),
+                                                                    tint = Color.White,
+                                                                )
+                                                            }
+                                                        }
                                                         IconButton(
                                                             onClick = onPlaylistMoreClick,
                                                         ) {
