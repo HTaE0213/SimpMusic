@@ -1456,12 +1456,18 @@ fun PlaylistScreen(
                             }
                         },
                         actions = {
-                            IconButton(
-                                onClick = {
-                                    showSearchBar = !showSearchBar
-                                },
-                            ) {
-                                Icon(Icons.Rounded.Search, null, tint = Color.White)
+                            if (changingOrder && canEditPlaylist) {
+                                IconButton(onClick = { changingOrder = false }) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Done,
+                                        contentDescription = stringResource(Res.string.done),
+                                        tint = Color.White,
+                                    )
+                                }
+                            } else {
+                                IconButton(onClick = { showSearchBar = !showSearchBar }) {
+                                    Icon(Icons.Rounded.Search, null, tint = Color.White)
+                                }
                             }
                         },
                         colors =
