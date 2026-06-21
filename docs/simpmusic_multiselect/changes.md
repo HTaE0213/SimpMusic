@@ -97,3 +97,19 @@
 - Now Playing画面の下部コントロールボタン群が、システムバーインセット適用によりナビゲーションバー（Y=2252〜2362）と被らず、最下端 Y=2195 で表示されていることをbounds情報から確認（重なり解消の再確認）。
 - 対象操作後のlogcatを確認し、SimpMusicプロセスのFatal / Exceptionが検出されないことを確認。
 - 親コミット: `2a6ebba` (`fix(i18n): Localize playlist completion action`)。Forkへpush済み。
+
+# 2026-06-21 プレイリスト編集UX・追加者・原題再修正
+
+- 編集可能ヘッダーをドメイン状態へ追加し、ホーム経由でも所有プレイリストの編集操作を表示可能にした。
+- 並べ替えジェスチャをリスト全体の長押しから、右端48dpハンドルの即時ドラッグへ変更した。
+- 移動行の背景・枠と、挿入候補境界の3dpラインを追加した。
+- 初期プレイリストパーサーで `contributorsAvatars` を `Track.addedBy` へ渡すよう修正した。
+- YouTubeクライアントの英語固定を解除し、端末言語応答と明示的英語応答のマージを復元した。
+- 親・`core`の `git diff --check` と英日XML解析に成功。
+- ビルド証跡: `BUILD SUCCESSFUL in 1m 26s`。arm64-v8a APKは61.86 MB、SHA-256 `36EBF15A0A1F4ABFE960BC57FFEEFF3FB070125615E53E60CB1547C727080651`。
+- ADB更新インストール成功。ホーム経由の所有プレイリストで編集ボタンと完了切替を確認。
+- 初期表示曲の右端に追加者アバターと追加者名のcontentDescriptionが表示されることを確認。
+- 邦楽タイトルの日本語表示と対象操作後のFatalなしを確認。ドラッグ中表示と全カタログの原題判定は人間確認待ち。
+- `core`コミット: `944127c` (`fix(playlist): Preserve edit and contributor metadata`)。Forkへpush済み。
+- `core`コミット: `255b7fd` (`fix(metadata): Restore the selected YouTube locale`)。Forkへpush済み。
+- 親コミット: `366706c` (`fix(playlist): Improve editing entry and drag feedback`)。Forkへpush済み。
