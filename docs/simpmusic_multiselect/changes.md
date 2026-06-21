@@ -113,3 +113,16 @@
 - `core`コミット: `944127c` (`fix(playlist): Preserve edit and contributor metadata`)。Forkへpush済み。
 - `core`コミット: `255b7fd` (`fix(metadata): Restore the selected YouTube locale`)。Forkへpush済み。
 - 親コミット: `366706c` (`fix(playlist): Improve editing entry and drag feedback`)。Forkへpush済み。
+
+# 2026-06-21 連続並べ替え再修正
+
+- ドラッグ行の中心が元の行領域へ戻った時点で挿入候補を解除するよう変更。
+- API通信中のハンドル無効化を削除し、ローカル順序を即時反映するよう変更。
+- 移動操作を同期的にFIFOキューへ投入し、単一consumerで直列送信するよう変更。
+- 成功Toastをキューの保留件数が0になった時の1回へ集約。
+- API失敗後の後続index操作を停止し、サーバー順序の再取得で整合させるよう変更。
+- 親・`core`の `git diff --check` に成功。
+- ビルド証跡: `BUILD SUCCESSFUL in 1m 11s`。arm64-v8a APKは62.31 MB、SHA-256 `C0C2BD7212E0F8436AC0BCB0F8FE0B8D63808CA7EDA90F667749809D422450B5`。
+- 実ドラッグ確認は未検証。
+- ADB更新インストールと起動に成功。アプリPIDのFatalなし。端末ロックのため実ドラッグ検証は引き継ぎ。
+- 親コミット: `3f88bde` (`fix(playlist): Queue consecutive reorder operations`)。Forkへpush済み。
