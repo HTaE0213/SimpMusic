@@ -121,6 +121,12 @@ class DragDropState internal constructor(
 
     var currentIndexOfDraggedItem by mutableStateOf<Int?>(null)
 
+    val draggedFromIndex: Int?
+        get() = initiallyDraggedElement?.index
+
+    val dropTargetIndex: Int?
+        get() = currentSwapFromTo?.second
+
     private val initialOffsets: Pair<Int, Int>?
         get() = initiallyDraggedElement?.let { Pair(it.offset, it.offsetEnd) }
 
@@ -135,11 +141,19 @@ class DragDropState internal constructor(
     fun onDragStart(offset: Offset) {
         state.layoutInfo.visibleItemsInfo
             .firstOrNull { item -> offset.y.toInt() in item.offset..(item.offset + item.size) }
-            ?.also {
-                currentIndexOfDraggedItem = it.index
-                initiallyDraggedElement = it
-                draggingItemInitialOffset = it.offset
-            }
+            ?.let(::startDragging)
+    }
+
+    fun onDragStart(index: Int) {
+        state.layoutInfo.visibleItemsInfo
+            .firstOrNull { it.index == index }
+            ?.let(::startDragging)
+    }
+
+    private fun startDragging(item: LazyListItemInfo) {
+        currentIndexOfDraggedItem = item.index
+        initiallyDraggedElement = item
+        draggingItemInitialOffset = item.offset
     }
 
     fun onDragInterrupted(end: Boolean = false) {

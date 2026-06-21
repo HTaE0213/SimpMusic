@@ -13,11 +13,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -423,54 +423,13 @@ fun PlaylistScreen(
                         viewModel.moveYouTubePlaylistItem(data.id, from - 1, to - 1)
                     }
                 var overscrollJob by remember { mutableStateOf<Job?>(null) }
+                val canEditPlaylist = isYourYouTubePlaylist || data.isEditable
                 LazyColumn(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .background(if (isMobilePortrait) mutedPaletteBg else Color.Black)
-                            .hazeSource(hazeState)
-                            .pointerInput(changingOrder, playlistEditing) {
-                                if (!changingOrder || playlistEditing) return@pointerInput
-                                val onDrag: (androidx.compose.ui.input.pointer.PointerInputChange, Offset) -> Unit =
-                                    { change, offset ->
-                                        change.consume()
-                                        dragDropState.onDrag(offset)
-                                        if (overscrollJob?.isActive != true) {
-                                            dragDropState.checkForOverScroll().takeIf { it != 0f }?.let { amount ->
-                                                overscrollJob =
-                                                    coroutineScope.launch {
-                                                        dragDropState.state.animateScrollBy(
-                                                            amount * 1.3f,
-                                                            tween(easing = FastOutLinearInEasing),
-                                                        )
-                                                    }
-                                            } ?: overscrollJob?.cancel()
-                                        }
-                                    }
-                                val onDragEnd: () -> Unit = {
-                                    dragDropState.onDragInterrupted(true)
-                                    overscrollJob?.cancel()
-                                }
-                                val onDragCancel: () -> Unit = {
-                                    dragDropState.onDragInterrupted()
-                                    overscrollJob?.cancel()
-                                }
-                                if (getPlatform() == Platform.Desktop) {
-                                    detectDragGestures(
-                                        onDragStart = dragDropState::onDragStart,
-                                        onDrag = onDrag,
-                                        onDragEnd = onDragEnd,
-                                        onDragCancel = onDragCancel,
-                                    )
-                                } else {
-                                    detectDragGesturesAfterLongPress(
-                                        onDragStart = dragDropState::onDragStart,
-                                        onDrag = onDrag,
-                                        onDragEnd = onDragEnd,
-                                        onDragCancel = onDragCancel,
-                                    )
-                                }
-                            },
+                            .hazeSource(hazeState),
                     state = lazyState,
                 ) {
                     if (!showSearchBar) {
@@ -704,7 +663,7 @@ fun PlaylistScreen(
                                                         ) {
                                                             Icon(Icons.Rounded.Search, null, tint = Color.White)
                                                         }
-                                                        if (isYourYouTubePlaylist) {
+                                                        if (canEditPlaylist) {
                                                             IconButton(
                                                                 enabled = !playlistEditing,
                                                                 onClick = {
@@ -1058,7 +1017,7 @@ fun PlaylistScreen(
                                                             }
                                                         }
                                                         Spacer(Modifier.weight(1f))
-                                                        if (isYourYouTubePlaylist) {
+                                                        if (canEditPlaylist) {
                                                             IconButton(
                                                                 enabled = !playlistEditing,
                                                                 onClick = {
@@ -1162,6 +1121,40 @@ fun PlaylistScreen(
                     }) { index ->
                         val item = filteredTrack.getOrNull(index)
                         if (item != null) {
+                            val absoluteIndex = index + 1
+                            val dragHandleModifier =
+                                if (changingOrder && !playlistEditing) {
+                                    Modifier.pointerInput(absoluteIndex, playlistEditing) {
+                                        detectDragGestures(
+                                            onDragStart = { dragDropState.onDragStart(absoluteIndex) },
+                                            onDrag = { change, offset ->
+                                                change.consume()
+                                                dragDropState.onDrag(offset)
+                                                if (overscrollJob?.isActive != true) {
+                                                    dragDropState.checkForOverScroll().takeIf { it != 0f }?.let { amount ->
+                                                        overscrollJob =
+                                                            coroutineScope.launch {
+                                                                dragDropState.state.animateScrollBy(
+                                                                    amount * 1.3f,
+                                                                    tween(easing = FastOutLinearInEasing),
+                                                                )
+                                                            }
+                                                    } ?: overscrollJob?.cancel()
+                                                }
+                                            },
+                                            onDragEnd = {
+                                                dragDropState.onDragInterrupted(true)
+                                                overscrollJob?.cancel()
+                                            },
+                                            onDragCancel = {
+                                                dragDropState.onDragInterrupted()
+                                                overscrollJob?.cancel()
+                                            },
+                                        )
+                                    }
+                                } else {
+                                    Modifier
+                                }
                             val content = @Composable { modifier: Modifier ->
                                 Column(modifier = modifier) {
                                 if (playingTrack?.videoId == item.videoId && isPlaying) {
@@ -1169,6 +1162,7 @@ fun PlaylistScreen(
                                         isPlaying = true,
                                         track = item,
                                         shouldShowDragHandle = changingOrder,
+                                        dragHandleModifier = dragHandleModifier,
                                         enableMultiSelect = !changingOrder,
                                         selectionScope = filteredTrack,
                                         onMoreClickListener = if (changingOrder) null else ({ onItemMoreClick(it) }),
@@ -1188,6 +1182,7 @@ fun PlaylistScreen(
                                         isPlaying = false,
                                         track = item,
                                         shouldShowDragHandle = changingOrder,
+                                        dragHandleModifier = dragHandleModifier,
                                         enableMultiSelect = !changingOrder,
                                         selectionScope = filteredTrack,
                                         onMoreClickListener = if (changingOrder) null else ({ onItemMoreClick(it) }),
@@ -1213,8 +1208,36 @@ fun PlaylistScreen(
                                 }
                             }
                             if (changingOrder) {
-                                DraggableItem(dragDropState, index + 1, Modifier.animateItem()) {
-                                    content(Modifier)
+                                DraggableItem(dragDropState, absoluteIndex, Modifier.animateItem()) { isDragging ->
+                                    val draggedFrom = dragDropState.draggedFromIndex
+                                    val dropTarget = dragDropState.dropTargetIndex
+                                    val showInsertionBefore = dropTarget == absoluteIndex && draggedFrom != null && dropTarget < draggedFrom
+                                    val showInsertionAfter = dropTarget == absoluteIndex && draggedFrom != null && dropTarget > draggedFrom
+                                    if (showInsertionBefore) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(horizontal = 12.dp),
+                                            thickness = 3.dp,
+                                            color = Color.White,
+                                        )
+                                    }
+                                    content(
+                                        if (isDragging) {
+                                            Modifier
+                                                .padding(horizontal = 4.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(Color.White.copy(alpha = 0.14f))
+                                                .border(2.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(12.dp))
+                                        } else {
+                                            Modifier
+                                        },
+                                    )
+                                    if (showInsertionAfter) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(horizontal = 12.dp),
+                                            thickness = 3.dp,
+                                            color = Color.White,
+                                        )
+                                    }
                                 }
                             } else {
                                 content(Modifier.animateItem())

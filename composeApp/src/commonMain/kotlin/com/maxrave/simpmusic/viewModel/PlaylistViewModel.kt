@@ -285,6 +285,7 @@ class PlaylistViewModel(
                                             description = data.first.description,
                                             trackCount = data.first.trackCount,
                                             year = data.first.year,
+                                            isEditable = data.first.isEditable,
                                             shuffleEndpoint = data.first.shuffleEndpoint,
                                             radioEndpoint = data.first.radioEndpoint,
                                         ),

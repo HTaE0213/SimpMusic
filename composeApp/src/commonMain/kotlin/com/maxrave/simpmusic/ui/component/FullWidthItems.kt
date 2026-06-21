@@ -117,6 +117,7 @@ fun SongFullWidthItems(
     songEntity: SongEntity? = null,
     isPlaying: Boolean,
     shouldShowDragHandle: Boolean = false,
+    dragHandleModifier: Modifier = Modifier,
     onMoreClickListener: ((videoId: String) -> Unit)? = null,
     onClickListener: ((videoId: String) -> Unit)? = null,
     onAddToQueue: ((videoId: String) -> Unit)? = null,
@@ -403,12 +404,16 @@ fun SongFullWidthItems(
                     enter = fadeIn() + expandHorizontally(),
                     exit = fadeOut() + shrinkHorizontally(),
                 ) {
-                    Icon(
-                        Icons.Rounded.DragHandle,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                    )
+                    Box(
+                        modifier = dragHandleModifier.size(48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Rounded.DragHandle,
+                            contentDescription = null,
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
         }
