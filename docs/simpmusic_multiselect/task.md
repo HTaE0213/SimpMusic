@@ -74,3 +74,5 @@
 - [x] API完了を待たず連続並べ替えできるFIFOキューを実装（ビルド成功） <!-- id: 66 -->
 - [ ] 👤 waiting_human: 原位置no-op・連続ドラッグ・バッチToastを最新APKで確認 <!-- id: 67 -->
 - [ ] 👤 waiting_human: 固定TopAppBarの編集完了操作をビルド・実機確認する（実装・静的確認済み） <!-- id: 68 -->
+- [ ] 👤 waiting_human: Now Playingヘッダーのシークレット・ハイライト切替をビルド・実機確認する（実装・静的確認済み） <!-- id: 69 -->
+- [ ] 👤 waiting_human: Androidステータスバーの不透明黒scrimをビルド・実機確認する（実装・静的確認済み） <!-- id: 70 -->

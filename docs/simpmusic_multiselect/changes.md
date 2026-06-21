@@ -132,3 +132,10 @@
 - 折り畳み後の固定TopAppBarで、編集時は検索の代わりに完了アイコンを表示するよう変更。
 - `git diff --check`成功。Gradleビルドと実機確認は未実施。
 - 親コミット: `9d26bc7` (`fix(playlist): Keep edit completion accessible`)。Forkへpush済み。
+# 2026-06-22 Now Playingヘッダーとステータスバー
+
+- シークレットモードとハイライト機能の状態付き切替をNow Playing TopAppBarへ移動。
+- 再生画面下部から同じ2つの切替を削除。
+- AndroidのstatusBarStyle scrimを透明から不透明黒へ変更。
+- `git diff --check`成功。Gradleビルドと実機確認は未実施。
+- 親コミット: `531a2e2` (`fix(player): Move mode toggles into header`)。Forkへpush済み。
