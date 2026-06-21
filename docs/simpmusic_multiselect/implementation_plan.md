@@ -90,3 +90,8 @@ ADB接続された実機Android端末での検証により判明した、以下�
 3. 下部操作列から同じ2つのIconButtonを削除する。
 4. AndroidのstatusBarStyle scrimを透明から不透明黒へ変更する。
 5. 小画面のタイトル幅、状態色、システムバー表示を実機確認する。
+# 2026-06-22 3ボタンナビゲーションバー
+
+1. `enableEdgeToEdge`と既存のsystem bar inset処理は維持する。
+2. navigationBarStyleのscrimを透明から不透明黒へ変更する。
+3. 3ボタン方式とジェスチャー方式の両方で下端表示を実機確認する。

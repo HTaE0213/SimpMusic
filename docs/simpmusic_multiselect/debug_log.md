@@ -149,3 +149,7 @@
 - `MainActivity.enableEdgeToEdge`でstatusBarStyleのscrimが透明に設定されていることを確認。
 - Android公式ページの取得は403で失敗。Android 15以降の見た目は実機確認対象とする。
 - TopAppBarへ両トグルを移動し、下部の重複を削除。statusBarStyleを黒へ変更し、`git diff --check`成功。ビルド・実機確認は未実施。
+## 2026-06-22 3ボタンナビゲーションバー
+
+- `MainActivity.enableEdgeToEdge`のnavigationBarStyleだけ透明scrimのまま残っていた。
+- 不透明黒scrimへ変更。Androidバージョンと3ボタン設定による見た目は実機確認待ち。

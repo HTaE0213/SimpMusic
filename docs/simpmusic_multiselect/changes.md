@@ -139,3 +139,9 @@
 - AndroidのstatusBarStyle scrimを透明から不透明黒へ変更。
 - `git diff --check`成功。Gradleビルドと実機確認は未実施。
 - 親コミット: `531a2e2` (`fix(player): Move mode toggles into header`)。Forkへpush済み。
+# 2026-06-22 3ボタンナビゲーションバー
+
+- AndroidのnavigationBarStyle scrimを透明から不透明黒へ変更。
+- ステータスバーとナビゲーションバーの両方へ黒scrimを指定。
+- `git diff --check`成功。Gradleビルドと実機確認は未実施。
+- 親コミット: `e5ff0c5` (`fix(android): Use opaque navigation bar scrim`)。Forkへpush済み。
