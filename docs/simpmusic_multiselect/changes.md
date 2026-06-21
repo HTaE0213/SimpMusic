@@ -126,3 +126,9 @@
 - 実ドラッグ確認は未検証。
 - ADB更新インストールと起動に成功。アプリPIDのFatalなし。端末ロックのため実ドラッグ検証は引き継ぎ。
 - 親コミット: `3f88bde` (`fix(playlist): Queue consecutive reorder operations`)。Forkへpush済み。
+# 2026-06-21 固定編集完了操作
+
+- 下方の曲を並べ替えた後、先頭へ戻らないと編集を完了できない実機フィードバックを受理。
+- 折り畳み後の固定TopAppBarで、編集時は検索の代わりに完了アイコンを表示するよう変更。
+- `git diff --check`成功。Gradleビルドと実機確認は未実施。
+- 親コミット: `9d26bc7` (`fix(playlist): Keep edit completion accessible`)。Forkへpush済み。
