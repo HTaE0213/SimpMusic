@@ -124,8 +124,12 @@ class DragDropState internal constructor(
     val draggedFromIndex: Int?
         get() = initiallyDraggedElement?.index
 
+    /**
+     * 現在の挿入先。ドラッグ中に毎回評価され、元位置へ戻った場合は明示的に null になる。
+     * UIはこれを使って挿入ラインを描画する。
+     */
     val dropTargetIndex: Int?
-        get() = currentSwapFromTo?.second
+        get() = currentSwapFromTo?.let { (from, to) -> if (from == to) null else to }
 
     private val initialOffsets: Pair<Int, Int>?
         get() = initiallyDraggedElement?.let { Pair(it.offset, it.offsetEnd) }
@@ -136,6 +140,11 @@ class DragDropState internal constructor(
                 state.getVisibleItemInfoFor(absoluteIndex = it)
             }
 
+    /**
+     * ドラッグ中の移動候補。
+     * onDrag の都度再評価され、元位置へ戻った場合は from == to として保持するのではなく null へ戻す。
+     * これにより「移動→同じジェスチャで元位置へ戻す」操作で API 呼び出し・Toast・挿入ラインをすべて抑止する。
+     */
     private var currentSwapFromTo by mutableStateOf<Pair<Int, Int>?>(null)
 
     fun onDragStart(offset: Offset) {
@@ -154,15 +163,22 @@ class DragDropState internal constructor(
         currentIndexOfDraggedItem = item.index
         initiallyDraggedElement = item
         draggingItemInitialOffset = item.offset
+        currentSwapFromTo = null
     }
 
     fun onDragInterrupted(end: Boolean = false) {
-        currentSwapFromTo?.let { (from, to) ->
-            if (from != to && from >= 0 && to >= 0 && end) {
-                Logger.w("QueueBottomSheet", "onDragInterrupted: $from, $to")
+        // ドラッグ終了時の候補を確定する。
+        // from == to の候補は「元位置へ戻った」状態なので移動も API 呼び出しも行わない。
+        val pending = currentSwapFromTo
+        if (end && pending != null) {
+            val (from, to) = pending
+            if (from != to && from >= 0 && to >= 0) {
+                Logger.w("QueueBottomSheet", "onDragInterrupted commit: $from -> $to")
                 onSwap(from, to)
+                currentIndexOfDraggedItem = to
+            } else {
+                Logger.w("QueueBottomSheet", "onDragInterrupted cancelled at origin: $from")
             }
-            currentIndexOfDraggedItem = to
         }
         currentSwapFromTo = null
         if (currentIndexOfDraggedItem != null) {
@@ -189,25 +205,31 @@ class DragDropState internal constructor(
         initialOffsets?.let { (topOffset, bottomOffset) ->
             val startOffset = topOffset + draggedDistance
             val endOffset = bottomOffset + draggedDistance
+            val draggedCenter = (startOffset + endOffset) / 2f
+
+            // The dragged row is back inside its original slot. Clear the last target
+            // immediately so releasing here becomes a true no-op.
+            if (draggedCenter in topOffset.toFloat()..bottomOffset.toFloat()) {
+                currentSwapFromTo = null
+                return
+            }
 
             currentElement?.let { hovered ->
-                state.layoutInfo.visibleItemsInfo
+                val target =
+                    state.layoutInfo.visibleItemsInfo
                     .filterNot { item -> item.offsetEnd < startOffset || item.offset > endOffset || hovered.index == item.index }
-                    .apply {
-                        forEach { item ->
-                            Logger.w("QueueBottomSheet", "onDrag: ${item.index}")
-                        }
-                    }.firstOrNull { item ->
+                    .firstOrNull { item ->
                         val delta = (startOffset - hovered.offset)
                         when {
                             delta > 0 -> (endOffset > item.offsetEnd)
                             else -> (startOffset < item.offset)
                         }
-                    }?.also { item ->
-                        currentIndexOfDraggedItem?.let { current ->
-                            currentSwapFromTo = Pair(current, item.index)
-                        }
                     }
+                target?.let { item ->
+                    currentIndexOfDraggedItem?.let { current ->
+                        currentSwapFromTo = Pair(current, item.index)
+                    }
+                }
             }
         }
     }

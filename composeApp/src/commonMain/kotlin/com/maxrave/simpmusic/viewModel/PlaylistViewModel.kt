@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 import com.maxrave.data.helper.MetadataLanguageHelper
 import org.koin.core.component.inject
 import simpmusic.composeapp.generated.resources.Res
@@ -100,6 +101,28 @@ class PlaylistViewModel(
     private var playlistEntityJob: Job? = null
     private var newUpdateJob: Job? = null
     private var checkDownloadedPlaylist: Job? = null
+
+    /**
+     * YouTubeプレイリストの並べ替えを直列実行するためのFIFOキュー。
+     *
+     * 設計の要点（不具合2の修正）:
+     * - UIのローカル順序は指を離した時点で即時反映する。ハンドルの無効化には `_playlistEditing` を使わない。
+     * - APIは単一のChannel consumerで1件ずつ直列実行し、同期的なtrySendで操作順を保証する。
+     * - 失敗後は後続のindex操作を送らない。バッチ終了時にサーバー順序を再取得し、
+     *   古いローカルスナップショットで後続操作まで巻き戻すことを避ける。
+     * - 成功Toastは操作ごとに連発せず、キューが空になって初めて最大1回だけ表示する。
+     * - ViewModel破棄時は [moveQueueJob] をキャンセルし、途中のAPI呼び出しも中断する。
+     */
+    private data class MoveOperation(
+        val playlistId: String,
+        val fromIndex: Int,
+        val toIndex: Int,
+    )
+
+    private val moveQueue = Channel<MoveOperation>(capacity = Channel.UNLIMITED)
+    private var moveQueueJob: Job? = null
+    private var pendingMoveCount = 0
+    private var moveBatchFailed = false
 
     init {
         viewModelScope.launch {
@@ -747,39 +770,117 @@ class PlaylistViewModel(
         }
     }
 
+    /**
+     * プレイリスト項目の並べ替え。
+     *
+     * 指を離した時点でUIローカル順序を即時反映し、API呼び出しは [moveQueue] へ直列投入する。
+     * これにより API 通信中でも次のドラッグ操作が可能になる。
+     * `_playlistEditing` はドラッグハンドル無効化には使わず、後続バックグラウンドが進行中かどうかの
+     * 参考状態としてのみ用いる（画面側は基本的にこれを見てハンドルを止めない）。
+     */
     fun moveYouTubePlaylistItem(
         playlistId: String,
         fromIndex: Int,
         toIndex: Int,
     ) {
-        if (_playlistEditing.value || fromIndex == toIndex || fromIndex !in _tracks.value.indices || toIndex !in _tracks.value.indices) return
-        _playlistEditing.value = true
-        val previousTracks = _tracks.value
-        val reordered = previousTracks.toMutableList().apply {
+        if (fromIndex == toIndex) {
+            // 元位置へ戻った操作。UIもAPIも変更しない。
+            return
+        }
+        if (fromIndex !in _tracks.value.indices || toIndex !in _tracks.value.indices) return
+
+        // UIローカル順序を即時反映。
+        val reordered = _tracks.value.toMutableList().apply {
             add(toIndex, removeAt(fromIndex))
         }
         _tracks.value = reordered
-        viewModelScope.launch {
-            try {
-                playlistRepository.moveYouTubePlaylistItem(playlistId, fromIndex, toIndex).collect { result ->
-                    when (result) {
-                        is Resource.Success -> makeToast(getString(Res.string.updated))
-                        is Resource.Error -> {
-                            _tracks.value = previousTracks
-                            makeToast(result.message ?: getString(Res.string.error))
+        val operation = MoveOperation(
+            playlistId = playlistId,
+            fromIndex = fromIndex,
+            toIndex = toIndex,
+        )
+        pendingMoveCount += 1
+        if (moveQueue.trySend(operation).isFailure) {
+            pendingMoveCount -= 1
+            makeToast(getString(Res.string.error))
+            return
+        }
+        ensureMoveQueueConsumer()
+    }
+
+    /**
+     * キューの消費コルーチンを1つだけ起動する。
+     */
+    private fun ensureMoveQueueConsumer() {
+        if (moveQueueJob?.isActive == true) return
+        moveQueueJob =
+            viewModelScope.launch {
+                for (operation in moveQueue) {
+                    processMoveOperation(operation)
+                }
+            }
+    }
+
+    private suspend fun processMoveOperation(operation: MoveOperation) {
+        _playlistEditing.value = true
+        try {
+            // A failed index operation invalidates the index basis for the rest of this
+            // batch. Skip those requests and reconcile once the batch has drained.
+            if (!moveBatchFailed) {
+                var operationFailed = false
+                playlistRepository
+                    .moveYouTubePlaylistItem(operation.playlistId, operation.fromIndex, operation.toIndex)
+                    .collect { result ->
+                        when (result) {
+                            is Resource.Success -> Unit
+                            is Resource.Error -> {
+                                operationFailed = true
+                                Logger.w(tag, "moveYouTubePlaylistItem failed: ${result.message}")
+                            }
                         }
                     }
+                if (operationFailed) {
+                    moveBatchFailed = true
                 }
-            } finally {
+            }
+        } finally {
+            pendingMoveCount -= 1
+            if (pendingMoveCount == 0) {
+                if (moveBatchFailed) {
+                    refreshTracksFromServer(operation.playlistId)
+                    makeToast(getString(Res.string.error))
+                } else {
+                    makeToast(getString(Res.string.updated))
+                }
+                moveBatchFailed = false
                 _playlistEditing.value = false
             }
         }
+    }
+
+    /**
+     * API失敗時にローカル順序とサーバー順序が乖離した場合の安全な復旧。
+     * サーバーから最新のプレイリストを再取得し、_tracks を上書きする。
+     * UI側での編集操作が進行中であっても、再取得結果が正とみなす。
+     */
+    private suspend fun refreshTracksFromServer(playlistId: String) {
+        runCatching {
+            playlistRepository
+                .getPlaylistData(playlistId, getString(Res.string.view_count))
+                .firstOrNull { it is Resource.Success }
+        }.getOrNull()
+            ?.let { res -> (res as? Resource.Success)?.data }
+            ?.let { (browse, _) ->
+                _tracks.value = browse.tracks
+            }
     }
 
     override fun onCleared() {
         super.onCleared()
         collectDownloadedJob?.cancel()
         playlistEntityJob?.cancel()
+        moveQueueJob?.cancel()
+        moveQueue.close()
     }
 
     private fun mergeTracks(jaList: List<Track>, enList: List<Track>): List<Track> {

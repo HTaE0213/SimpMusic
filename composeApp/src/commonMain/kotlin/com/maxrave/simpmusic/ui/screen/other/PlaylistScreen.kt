@@ -217,7 +217,6 @@ fun PlaylistScreen(
     val liked by viewModel.liked.collectAsStateWithLifecycle()
     val tracks by viewModel.tracks.collectAsStateWithLifecycle()
     val tracksListState by viewModel.tracksListState.collectAsStateWithLifecycle()
-    val playlistEditing by viewModel.playlistEditing.collectAsStateWithLifecycle()
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     var searchBarHeightPx by remember { mutableStateOf(0) }
@@ -665,7 +664,6 @@ fun PlaylistScreen(
                                                         }
                                                         if (canEditPlaylist) {
                                                             IconButton(
-                                                                enabled = !playlistEditing,
                                                                 onClick = {
                                                                     changingOrder = !changingOrder
                                                                     showSearchBar = false
@@ -1019,7 +1017,6 @@ fun PlaylistScreen(
                                                         Spacer(Modifier.weight(1f))
                                                         if (canEditPlaylist) {
                                                             IconButton(
-                                                                enabled = !playlistEditing,
                                                                 onClick = {
                                                                     changingOrder = !changingOrder
                                                                     showSearchBar = false
@@ -1123,8 +1120,8 @@ fun PlaylistScreen(
                         if (item != null) {
                             val absoluteIndex = index + 1
                             val dragHandleModifier =
-                                if (changingOrder && !playlistEditing) {
-                                    Modifier.pointerInput(absoluteIndex, playlistEditing) {
+                                if (changingOrder) {
+                                    Modifier.pointerInput(absoluteIndex) {
                                         detectDragGestures(
                                             onDragStart = { dragDropState.onDragStart(absoluteIndex) },
                                             onDrag = { change, offset ->
