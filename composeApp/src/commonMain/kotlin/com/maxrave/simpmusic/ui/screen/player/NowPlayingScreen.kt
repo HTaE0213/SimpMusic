@@ -63,7 +63,6 @@ import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.SubtitlesOff
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -71,8 +70,6 @@ import androidx.compose.material.icons.rounded.Forward5
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Replay5
 import androidx.compose.material.icons.rounded.ThumbsUpDown
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -193,8 +190,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import simpmusic.composeapp.generated.resources.Res
-import simpmusic.composeapp.generated.resources.quick_highlight_medley
-import simpmusic.composeapp.generated.resources.quick_incognito
 import simpmusic.composeapp.generated.resources.artists
 import simpmusic.composeapp.generated.resources.baseline_fullscreen_24
 import simpmusic.composeapp.generated.resources.baseline_more_vert_24
@@ -293,8 +288,6 @@ fun NowPlayingScreenContent(
     val screenDataState by sharedViewModel.nowPlayingScreenData.collectAsStateWithLifecycle()
     val timelineState by sharedViewModel.timeline.collectAsStateWithLifecycle()
     val likeStatus by sharedViewModel.likeStatus.collectAsStateWithLifecycle()
-    val highlightModeEnabled by sharedViewModel.highlightModeEnabled.collectAsStateWithLifecycle()
-    val incognitoModeEnabled by sharedViewModel.incognitoModeEnabled.collectAsStateWithLifecycle()
 
     val shouldShowVideo by sharedViewModel.getVideo.collectAsStateWithLifecycle()
     val translatedVoteState by sharedViewModel.translatedVoteState.collectAsStateWithLifecycle()
@@ -1435,48 +1428,6 @@ fun NowPlayingScreenContent(
                         }
                     },
                     actions = {
-                        IconButton(
-                            colors =
-                                IconButtonDefaults.iconButtonColors(
-                                    containerColor =
-                                        if (incognitoModeEnabled) {
-                                            sliderTrackColor.copy(alpha = 0.28f)
-                                        } else {
-                                            Color.Transparent
-                                        },
-                                ),
-                            onClick = {
-                                sharedViewModel.setIncognitoModeEnabled(!incognitoModeEnabled)
-                            },
-                        ) {
-                            Icon(
-                                imageVector = if (incognitoModeEnabled) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                tint = if (incognitoModeEnabled) sliderTrackColor else Color.White.copy(alpha = 0.72f),
-                                contentDescription = stringResource(Res.string.quick_incognito),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                        IconButton(
-                            colors =
-                                IconButtonDefaults.iconButtonColors(
-                                    containerColor =
-                                        if (highlightModeEnabled) {
-                                            sliderTrackColor.copy(alpha = 0.28f)
-                                        } else {
-                                            Color.Transparent
-                                        },
-                                ),
-                            onClick = {
-                                sharedViewModel.setHighlightModeEnabled(!highlightModeEnabled)
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.AutoAwesome,
-                                tint = if (highlightModeEnabled) sliderTrackColor else Color.White.copy(alpha = 0.72f),
-                                contentDescription = stringResource(Res.string.quick_highlight_medley),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
                         // Desktop mini player button (JVM only)
                         if (getPlatform() == Platform.Desktop) {
                             IconButton(onClick = { toggleMiniPlayer() }) {

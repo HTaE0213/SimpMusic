@@ -44,9 +44,16 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -177,6 +184,8 @@ import simpmusic.composeapp.generated.resources.moods_amp_moment
 import simpmusic.composeapp.generated.resources.outline_notifications_24
 import simpmusic.composeapp.generated.resources.party
 import simpmusic.composeapp.generated.resources.quick_picks
+import simpmusic.composeapp.generated.resources.quick_highlight_medley
+import simpmusic.composeapp.generated.resources.quick_incognito
 import simpmusic.composeapp.generated.resources.relax
 import simpmusic.composeapp.generated.resources.romance
 import simpmusic.composeapp.generated.resources.sad
@@ -768,7 +777,7 @@ fun HomeScreen(
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
-                    HomeTopAppBar(navController)
+                    HomeTopAppBar(navController, sharedViewModel)
                 }
                 AnimatedVisibility(
                     visible = !isScrollingUp,
@@ -835,7 +844,12 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopAppBar(navController: NavController) {
+fun HomeTopAppBar(
+    navController: NavController,
+    sharedViewModel: SharedViewModel,
+) {
+    val highlightModeEnabled by sharedViewModel.highlightModeEnabled.collectAsStateWithLifecycle()
+    val incognitoModeEnabled by sharedViewModel.incognitoModeEnabled.collectAsStateWithLifecycle()
     val hour =
         remember {
             val date = now().time
@@ -883,6 +897,38 @@ fun HomeTopAppBar(navController: NavController) {
             }
             RippleIconButton(resId = Res.drawable.baseline_history_24) {
                 navController.navigate(RecentlySongsDestination)
+            }
+            IconButton(
+                colors =
+                    IconButtonDefaults.iconButtonColors(
+                        containerColor = if (incognitoModeEnabled) Color.White.copy(alpha = 0.2f) else Color.Transparent,
+                    ),
+                onClick = {
+                    sharedViewModel.setIncognitoModeEnabled(!incognitoModeEnabled)
+                },
+            ) {
+                Icon(
+                    imageVector = if (incognitoModeEnabled) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                    tint = if (incognitoModeEnabled) Color.White else Color.White.copy(alpha = 0.72f),
+                    contentDescription = stringResource(Res.string.quick_incognito),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            IconButton(
+                colors =
+                    IconButtonDefaults.iconButtonColors(
+                        containerColor = if (highlightModeEnabled) Color.White.copy(alpha = 0.2f) else Color.Transparent,
+                    ),
+                onClick = {
+                    sharedViewModel.setHighlightModeEnabled(!highlightModeEnabled)
+                },
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AutoAwesome,
+                    tint = if (highlightModeEnabled) Color.White else Color.White.copy(alpha = 0.72f),
+                    contentDescription = stringResource(Res.string.quick_highlight_medley),
+                    modifier = Modifier.size(20.dp),
+                )
             }
             RippleIconButton(resId = Res.drawable.baseline_settings_24) {
                 navController.navigate(SettingsDestination)
