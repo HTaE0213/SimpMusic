@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity() {
                 ),
             statusBarStyle =
                 SystemBarStyle.dark(
-                    scrim = Color.Transparent.toArgb(),
+                    scrim = Color.Black.toArgb(),
                 ),
         )
         viewModel.checkIsRestoring()

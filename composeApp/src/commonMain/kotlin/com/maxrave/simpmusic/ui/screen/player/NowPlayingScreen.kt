@@ -1435,6 +1435,48 @@ fun NowPlayingScreenContent(
                         }
                     },
                     actions = {
+                        IconButton(
+                            colors =
+                                IconButtonDefaults.iconButtonColors(
+                                    containerColor =
+                                        if (incognitoModeEnabled) {
+                                            sliderTrackColor.copy(alpha = 0.28f)
+                                        } else {
+                                            Color.Transparent
+                                        },
+                                ),
+                            onClick = {
+                                sharedViewModel.setIncognitoModeEnabled(!incognitoModeEnabled)
+                            },
+                        ) {
+                            Icon(
+                                imageVector = if (incognitoModeEnabled) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                                tint = if (incognitoModeEnabled) sliderTrackColor else Color.White.copy(alpha = 0.72f),
+                                contentDescription = stringResource(Res.string.quick_incognito),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        IconButton(
+                            colors =
+                                IconButtonDefaults.iconButtonColors(
+                                    containerColor =
+                                        if (highlightModeEnabled) {
+                                            sliderTrackColor.copy(alpha = 0.28f)
+                                        } else {
+                                            Color.Transparent
+                                        },
+                                ),
+                            onClick = {
+                                sharedViewModel.setHighlightModeEnabled(!highlightModeEnabled)
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                tint = if (highlightModeEnabled) sliderTrackColor else Color.White.copy(alpha = 0.72f),
+                                contentDescription = stringResource(Res.string.quick_highlight_medley),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                         // Desktop mini player button (JVM only)
                         if (getPlatform() == Platform.Desktop) {
                             IconButton(onClick = { toggleMiniPlayer() }) {
@@ -1874,46 +1916,6 @@ fun NowPlayingScreenContent(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            IconButton(
-                                                modifier =
-                                                    Modifier
-                                                        .size(32.dp)
-                                                        .background(
-                                                            if (incognitoModeEnabled) sliderTrackColor.copy(alpha = 0.28f) else Color.Transparent,
-                                                            CircleShape,
-                                                        ),
-                                                onClick = {
-                                                    sharedViewModel.setIncognitoModeEnabled(!incognitoModeEnabled)
-                                                },
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (incognitoModeEnabled) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                                    tint = if (incognitoModeEnabled) sliderTrackColor else Color.White.copy(alpha = 0.72f),
-                                                    contentDescription = stringResource(Res.string.quick_incognito),
-                                                    modifier = Modifier.size(18.dp),
-                                                )
-                                            }
-
-                                            IconButton(
-                                                modifier =
-                                                    Modifier
-                                                        .size(32.dp)
-                                                        .background(
-                                                            if (highlightModeEnabled) sliderTrackColor.copy(alpha = 0.28f) else Color.Transparent,
-                                                            CircleShape,
-                                                        ),
-                                                onClick = {
-                                                    sharedViewModel.setHighlightModeEnabled(!highlightModeEnabled)
-                                                },
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Filled.AutoAwesome,
-                                                    tint = if (highlightModeEnabled) sliderTrackColor else Color.White.copy(alpha = 0.72f),
-                                                    contentDescription = stringResource(Res.string.quick_highlight_medley),
-                                                    modifier = Modifier.size(18.dp),
-                                                )
-                                            }
-
                                             // NEW: Add to Playlist Button (Center-Right)
                                             IconButton(
                                                 modifier =
