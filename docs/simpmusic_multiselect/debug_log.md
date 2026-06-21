@@ -153,3 +153,9 @@
 
 - `MainActivity.enableEdgeToEdge`のnavigationBarStyleだけ透明scrimのまま残っていた。
 - 不透明黒scrimへ変更。Androidバージョンと3ボタン設定による見た目は実機確認待ち。
+## 2026-06-22 配置先とシステムバー領域の訂正
+
+- 添付画像から、対象ヘッダーはホーム画面の通知・履歴・設定アクション行と確定。
+- 黒scrim指定だけではedge-to-edgeの内容領域がシステムバーの背後へ残り、表示が途切れて見えるとの実機報告を受理。
+- ルートでsafeDrawingを消費し、アプリ内容をシステムバー内側へ制約する方針へ変更。
+- HomeTopAppBarへの移動とルートsafeDrawingを実装。Now Playing側の状態購読・アイコン・リソースimportは削除。`git diff --check`成功、ビルド・実機確認待ち。

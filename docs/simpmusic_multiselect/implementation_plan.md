@@ -95,3 +95,10 @@ ADB接続された実機Android端末での検証により判明した、以下�
 1. `enableEdgeToEdge`と既存のsystem bar inset処理は維持する。
 2. navigationBarStyleのscrimを透明から不透明黒へ変更する。
 3. 3ボタン方式とジェスチャー方式の両方で下端表示を実機確認する。
+# 2026-06-22 ホームアクション行とsafeDrawing
+
+1. Now Playing TopAppBarから誤配置した2つのモード切替を削除する。
+2. `HomeTopAppBar`へ`SharedViewModel`を渡し、シークレット・ハイライト状態を購読する。
+3. 通知・履歴・設定と同じactions行へ状態付きIconButtonを配置する。
+4. ルートScaffoldを黒背景にし、`WindowInsets.safeDrawing`を一度だけ消費する。
+5. ホーム小画面、Now Playing、下部ナビゲーション、3ボタン方式を実機確認する。

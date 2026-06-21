@@ -145,3 +145,10 @@
 - ステータスバーとナビゲーションバーの両方へ黒scrimを指定。
 - `git diff --check`成功。Gradleビルドと実機確認は未実施。
 - 親コミット: `e5ff0c5` (`fix(android): Use opaque navigation bar scrim`)。Forkへpush済み。
+# 2026-06-22 ホームアクション行とシステムバー領域
+
+- Now Playingヘッダーからシークレット・ハイライト切替を削除。
+- ホーム上部の通知・履歴・設定と同じactions行へ2つの状態付き切替を追加。
+- ルートScaffoldへ黒背景と`WindowInsets.safeDrawing`を適用し、システムバー領域との重なりを防止。
+- `git diff --check`成功。Gradleビルドと実機確認は未実施。
+- 親コミット: `832e681` (`fix(ui): Place mode toggles in home header`)。Forkへpush済み。
