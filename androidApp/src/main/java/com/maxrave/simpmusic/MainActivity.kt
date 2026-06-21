@@ -175,7 +175,7 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge(
             navigationBarStyle =
                 SystemBarStyle.dark(
-                    scrim = Color.Transparent.toArgb(),
+                    scrim = Color.Black.toArgb(),
                 ),
             statusBarStyle =
                 SystemBarStyle.dark(
